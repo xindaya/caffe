@@ -214,13 +214,19 @@ P2PSync<Dtype>::P2PSync(shared_ptr<Solver<Dtype> > root_solver,
 #ifndef CPU_ONLY
   int initial_device;
   CUDA_CHECK(cudaGetDevice(&initial_device));
+  // 不同的线程，绑定的device_id 是不同的
+  // 也就是说在不同的gpu上启动了solver
   const int self = param.device_id();
   CUDA_CHECK(cudaSetDevice(self));
 
+  // 如果没有parent，没有根节点，则是root_solver
   if (parent == NULL) {
     solver_ = root_solver;
   } else {
     Caffe::set_root_solver(false);
+    // solver_ 是root_solver
+    // 如果有parent那么就是说这个是worker
+    // 所以要用worker来初始化
     solver_.reset(new WorkerSolver<Dtype>(param, root_solver.get()));
     Caffe::set_root_solver(true);
   }
@@ -412,6 +418,8 @@ void P2PSync<Dtype>::run(const vector<int>& gpus) {
           }
         }
         if (parent) {
+	// 这里设置了关键的一个信息
+	// deviceid
           param.set_device_id(pairs[i].device());
           syncs[i].reset(new P2PSync<Dtype>(solver_, parent, param));
           parent->children_.push_back((P2PSync<Dtype>*) syncs[i].get());
