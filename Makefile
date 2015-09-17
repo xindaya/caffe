@@ -7,6 +7,11 @@ $(error $(CONFIG_FILE) not found. See $(CONFIG_FILE).example.)
 endif
 include $(CONFIG_FILE)
 
+# Petuum
+CAFFE_DIR := $(shell readlink $(dir $(lastword $(MAKEFILE_LIST))) -f)
+PETUUM_ROOT = $(CAFFE_DIR)/ps
+include $(CAFFE_DIR)/defns-caffe.mk
+
 BUILD_DIR_LINK := $(BUILD_DIR)
 ifeq ($(RELEASE_BUILD_DIR),)
 	RELEASE_BUILD_DIR := .$(BUILD_DIR)_release
@@ -30,6 +35,7 @@ SRC_DIRS := $(shell find * -type d -exec bash -c "find {} -maxdepth 1 \
 
 # The target shared library name
 LIB_BUILD_DIR := $(BUILD_DIR)/lib
+NAME := $(LIB_BUILD_DIR)/lib$(PROJECT).so
 STATIC_NAME := $(LIB_BUILD_DIR)/lib$(PROJECT).a
 DYNAMIC_NAME := $(LIB_BUILD_DIR)/lib$(PROJECT).so
 
@@ -161,12 +167,12 @@ CUDA_LIB_DIR :=
 ifneq ("$(wildcard $(CUDA_DIR)/lib64)","")
 	CUDA_LIB_DIR += $(CUDA_DIR)/lib64
 endif
-CUDA_LIB_DIR += $(CUDA_DIR)/lib
+CUDA_LIB_DIR += $(CUDA_DIR)/lib 
 
-INCLUDE_DIRS += $(BUILD_INCLUDE_DIR) ./src ./include
+INCLUDE_DIRS += $(BUILD_INCLUDE_DIR) ./src ./include ./third_party/include
 ifneq ($(CPU_ONLY), 1)
 	INCLUDE_DIRS += $(CUDA_INCLUDE_DIR)
-	LIBRARY_DIRS += $(CUDA_LIB_DIR)
+	LIBRARY_DIRS += $(CUDA_LIB_DIR) ./third_party/lib
 	LIBRARIES := cudart cublas curand
 endif
 LIBRARIES += glog gflags protobuf leveldb snappy \
@@ -349,11 +355,19 @@ CXXFLAGS += -MMD -MP
 
 # Complete build flags.
 COMMON_FLAGS += $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir))
+#Petuum
+COMMON_FLAGS += $(PETUUM_INCFLAGS)
+
 CXXFLAGS += -pthread -fPIC $(COMMON_FLAGS) $(WARNINGS)
+
+#Petuum
+CXXFLAGS += $(PETUUM_CXXFLAGS) 
+
 NVCCFLAGS += -ccbin=$(CXX) -Xcompiler -fPIC $(COMMON_FLAGS)
 # mex may invoke an older gcc that is too liberal with -Wuninitalized
 MATLAB_CXXFLAGS := $(CXXFLAGS) -Wno-uninitialized
-LINKFLAGS += -pthread -fPIC $(COMMON_FLAGS) $(WARNINGS)
+LINKFLAGS += -static-libstdc++ -pthread -fPIC $(COMMON_FLAGS) $(WARNINGS)
+
 
 USE_PKG_CONFIG ?= 0
 ifeq ($(USE_PKG_CONFIG), 1)
@@ -361,8 +375,16 @@ ifeq ($(USE_PKG_CONFIG), 1)
 else
 	PKG_CONFIG :=
 endif
+
+#Petuum
+LDFLAGS += $(PETUUM_LDFLAGS_LIBS)
+
 LDFLAGS += $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(PKG_CONFIG) \
 		$(foreach library,$(LIBRARIES),-l$(library))
+
+#Petuum
+LDFLAGS += $(PETUUM_LDFLAGS_LIBS)
+
 PYTHON_LDFLAGS := $(LDFLAGS) $(foreach library,$(PYTHON_LIBRARIES),-l$(library))
 
 # 'superclean' target recursively* deletes all files ending with an extension
