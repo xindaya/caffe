@@ -10,6 +10,9 @@
 #include "caffe/layer_factory.hpp"
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/util/device_alternate.hpp"
+//bosen新加的头文件
+#include "caffe/filler.hpp"
+#include "caffe/sufficient_vector.hpp"
 
 /**
  Forward declare boost::thread instead of including boost/thread.hpp
@@ -64,11 +67,21 @@ class Layer {
    * Sets up the loss weight multiplier blobs for any non-zero loss weights.
    * This method may not be overridden.
    */
-  void SetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
-    InitMutex();
+   //A版增加了net_id,thread_id,init_ps,num_tables,layer_name_to_blob_global_idx参数
+   //将A版增加的参数添加到B版中，主要更新函数：LayerSetUp
+  void SetUp(const vector<Blob<Dtype>*>& bottom,const vector<Blob<Dtype>*>& top,
+      const int net_id, const int thread_id, const bool init_ps = false, 
+      int* num_tables = NULL, 
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL) {
+    net_id_ = net_id;
+    thread_id_ = thread_id;
+	if (init_ps) {
+      CHECK_NOTNULL(num_tables);
+      CHECK_NOTNULL(layer_name_to_blob_global_idx);
+    }
+	InitMutex();
     CheckBlobCounts(bottom, top);
-    LayerSetUp(bottom, top);
+    LayerSetUp(bottom, top, init_ps, num_tables, layer_name_to_blob_global_idx);
     Reshape(bottom, top);
     SetLossWeights(top);
   }
@@ -90,7 +103,9 @@ class Layer {
    * adjust the top blob sizes.
    */
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {}
+      const vector<Blob<Dtype>*>& top,const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL) {}
 
   /**
    * @brief Whether a layer should be shared by multiple nets during data
@@ -130,6 +145,9 @@ class Layer {
    */
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) = 0;
+//bosen新加函数，作用：为每个Blob创建全局的table
+  void SetUpBlobGlobalTable(const vector<int>& blob_global_id, 
+      const bool init, const bool reg); 
 
   /**
    * @brief Given the bottom blobs, compute the top blobs and the loss.
@@ -175,12 +193,22 @@ class Layer {
   inline void Backward(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down,
       const vector<Blob<Dtype>*>& bottom);
+//基于sv计算weight的梯度，应用于IP层
+ /*
+   * Compute gradients of weights based on sufficient vector
+   * Applied to inner_product layer
+   */
+  inline void ComputeGradientFromSV(const SufficientVector* v);
 
   /**
    * @brief Returns the vector of learnable parameter blobs.
    */
   vector<shared_ptr<Blob<Dtype> > >& blobs() {
     return blobs_;
+ }
+ //bosen新加函数，获取blob_params_id_参数
+  vector<int>& blob_params_id () {
+    return blob_params_id_;
   }
 
   /**
@@ -214,6 +242,23 @@ class Layer {
    * @brief Returns the layer type.
    */
   virtual inline const char* type() const { return ""; }
+
+
+//bosen下的获取type name的函数
+   * @brief Returns the layer type as an enum value.
+   */
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_NONE;
+  }
+
+  /**
+   * @brief Returns the layer type name.
+   */
+  virtual inline const string& type_name() const {
+    return LayerParameter_LayerType_Name(type());
+  }
+
+
 
   /**
    * @brief Returns the exact number of bottom blobs required by the layer,
@@ -318,12 +363,22 @@ class Layer {
 
 
  protected:
+/** -1: a layer of the train net; >0: a layer of the test net */
+//bosen新加参数
+  int net_id_;
+  int thread_id_;
   /** The protobuf that stores the layer parameters */
   LayerParameter layer_param_;
   /** The phase: TRAIN or TEST */
   Phase phase_;
   /** The vector that stores the learnable parameters as a set of blobs. */
   vector<shared_ptr<Blob<Dtype> > > blobs_;
+//bosen新加参数，定义blob在net中的id
+ /** param index in Net::params of each blob. */
+  vector<int> blob_params_id_;
+//bosen新加参数，定义blob的全局globtableid
+ /** The global table id of each blob. */
+  vector<int> blob_global_id_;
   /** Vector indicating whether to compute the diff of each param blob. */
   vector<bool> param_propagate_down_;
 
@@ -361,6 +416,15 @@ class Layer {
       const vector<Blob<Dtype>*>& bottom) {
     // LOG(WARNING) << "Using CPU code as backup.";
     Backward_cpu(top, propagate_down, bottom);
+	
+	}
+//bosen新加参数虚函数
+//语义理解：从SVcpu和SVgpu中计算梯度
+virtual void ComputeGradientFromSV_cpu(const SufficientVector* v) {}
+  virtual void ComputeGradientFromSV_gpu(const SufficientVector* v) {
+    // LOG(WARNING) << "Using CPU code as backup.";
+    ComputeGradientFromSV_cpu(v); 
+  
   }
 
   /**
@@ -368,6 +432,7 @@ class Layer {
    * and top Blobs provided as input match the expected numbers specified by
    * the {ExactNum,Min,Max}{Bottom,Top}Blobs() functions.
    */
+   //此处type()函数未按照bosen下的type_name()进行修改
   virtual void CheckBlobCounts(const vector<Blob<Dtype>*>& bottom,
                                const vector<Blob<Dtype>*>& top) {
     if (ExactNumBottomBlobs() >= 0) {
@@ -444,6 +509,54 @@ class Layer {
   DISABLE_COPY_AND_ASSIGN(Layer);
 };  // class Layer
 
+//bosen新加函数，为每个blob创建全局的global table
+template <typename Dtype>
+void Layer<Dtype>::SetUpBlobGlobalTable(
+    const vector<int>& blob_global_id, const bool init, const bool reg) {
+  CHECK_EQ(blobs_.size(), blob_global_id.size());
+
+  this->blob_global_id_ = blob_global_id;
+
+  for (int idx = 0; idx < blob_global_id_.size(); ++idx) {
+    this->blobs_[idx]->set_table(this->blob_global_id_[idx], reg);
+  }
+
+  // initialize the table if necessary
+  if(init) {
+    const LayerParameter& param = this->layer_param_;
+    const LayerParameter_LayerType& type = param.type();
+    shared_ptr<Filler<Dtype> > weight_filler;
+    switch (type) {
+    case LayerParameter_LayerType_CONVOLUTION:
+      // weight table
+      weight_filler.reset(GetFiller<Dtype>(
+          param.convolution_param().weight_filler()));
+      weight_filler->FillPSTable(this->blobs_[0].get());
+      // bias table if necessary
+      if (blob_global_id_.size() > 1) {
+        weight_filler.reset(GetFiller<Dtype>(
+            param.convolution_param().bias_filler()));
+        weight_filler->FillPSTable(this->blobs_[1].get());
+      } 
+      break;
+    case LayerParameter_LayerType_INNER_PRODUCT:
+      // weight table
+      weight_filler.reset(GetFiller<Dtype>(
+          param.inner_product_param().weight_filler()));
+      weight_filler->FillPSTable(this->blobs_[0].get());
+      // bias table if necessary
+      if (blob_global_id_.size() > 1) {
+        weight_filler.reset(GetFiller<Dtype>(
+            param.inner_product_param().bias_filler()));
+        weight_filler->FillPSTable(this->blobs_[1].get());
+      } 
+      break;
+    default:
+      LOG(FATAL) << "Layer " << param.name() << " with type " 
+                 << type << " cannot initialize PS tables";
+    }
+  }
+}
 // Forward and backward wrappers. You should implement the cpu and
 // gpu specific implementations instead, and should not change these
 // functions.
@@ -501,6 +614,20 @@ inline void Layer<Dtype>::Backward(const vector<Blob<Dtype>*>& top,
     LOG(FATAL) << "Unknown caffe mode.";
   }
 }
+//bosen新加函数，语义解释：从SV中计算梯度
+template <typename Dtype>
+inline void Layer<Dtype>::ComputeGradientFromSV(const SufficientVector* v) {
+  switch (Caffe::mode()) {
+  case Caffe::CPU:
+    this->ComputeGradientFromSV_cpu(v);
+    break;
+  case Caffe::GPU:
+    this->ComputeGradientFromSV_gpu(v);
+    break;
+  default:
+    LOG(FATAL) << "Unknown caffe mode.";
+  }
+}
 
 // Serialize LayerParameter to protocol buffer
 template <typename Dtype>
@@ -512,7 +639,13 @@ void Layer<Dtype>::ToProto(LayerParameter* param, bool write_diff) {
     blobs_[i]->ToProto(param->add_blobs(), write_diff);
   }
 }
-
+//bosen新加函数，语义解释：根据layer参数获取layer
+// The layer factory function
+template <typename Dtype>
+Layer<Dtype>* GetLayer(const LayerParameter& param);
+//bosen新加函数，语义解释：根据layer参数的到全局table的个数
+// The layer's PSTable configurator functions
+const int GetNumGlobalTables(const LayerParameter& param);
 }  // namespace caffe
 
 #endif  // CAFFE_LAYER_H_
