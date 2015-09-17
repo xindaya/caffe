@@ -52,6 +52,8 @@ class SyncedMemory {
   ~SyncedMemory();
   const void* cpu_data();
   void set_cpu_data(void* data);
+  void set_cpu_ps_data(void* data);
+  //void free_ps_data();
   const void* gpu_data();
   void set_gpu_data(void* data);
   void* mutable_cpu_data();
