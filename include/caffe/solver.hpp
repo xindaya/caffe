@@ -69,6 +69,7 @@ class Solver {
   int iter() { return iter_; }
 
   // Invoked at specific points during an iteration
+  // 内部类
   class Callback {
    protected:
     virtual void on_start() = 0;
