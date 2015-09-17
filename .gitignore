@@ -93,3 +93,23 @@ LOCK
 LOG*
 CURRENT
 MANIFEST-*
+# Petuum
+ps/src/ml/disk_stream/*.o
+ps/src/ml/util/*.o
+ps/src/petuum_ps_common/comm_bus/*.o
+ps/src/petuum_ps/client/*.o
+ps/src/petuum_ps/consistency/*.o
+ps/src/petuum_ps/oplog/*.o
+ps/src/petuum_ps/server/*.o
+ps/src/petuum_ps/thread/*.o
+ps/src/petuum_ps_common/comm_bus/*.o
+ps/src/petuum_ps_common/include/*.o
+ps/src/petuum_ps_common/oplog/*.o
+ps/src/petuum_ps_common/storage/*.o
+ps/src/petuum_ps_common/thread/*.o
+ps/src/petuum_ps_common/util/*.o
+ps/src/ml/disk_stream/*.o
+ps/src/ml/util/*.o
+ps/lib/*.a
+# end Petuum
+#
