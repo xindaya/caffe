@@ -101,13 +101,15 @@ message NetParameter {
   // Print debugging information about results while running Net::Forward,
   // Net::Backward, and Net::Update.
   optional bool debug_info = 7 [default = false];
+  
   //bosen新加内容
-  //repeated LayerParameter layers = 8; // a bunch of layers.
+  repeated LayerParameter layers_bosen = 9; // a bunch of layers.
  
   // The shape of the input blobs.
   repeated BlobShape input_shape = 8;
   // The layers that make up the net.  Each of their configurations, including
   // connectivity and behavior, is specified as a LayerParameter.
+  //caffe与bosen-caffe的不同，需要将layers改成layer
   repeated LayerParameter layer = 100;  // ID 100 so layers are printed last.
   
 
