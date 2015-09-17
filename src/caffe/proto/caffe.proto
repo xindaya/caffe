@@ -1,24 +1,41 @@
 syntax = "proto2";
 
 package caffe;
+// bosen 新增加的内容
+// Sufficient Vector
+message SVProto {
+  optional int32 layer_id = 1;
+  repeated float a = 2;
+  repeated float b = 3;
+}
 
+// 官方 caffe 新增加的内容
 // Specifies the shape (dimensions) of a Blob.
 message BlobShape {
   repeated int64 dim = 1 [packed = true];
 }
 
-message BlobProto {
-  optional BlobShape shape = 7;
-  repeated float data = 5 [packed = true];
-  repeated float diff = 6 [packed = true];
-  repeated double double_data = 8 [packed = true];
-  repeated double double_diff = 9 [packed = true];
 
-  // 4D dimensions -- deprecated.  Use "shape" instead.
+message BlobProto {
+   // 4D dimensions -- deprecated.  Use "shape" instead.
   optional int32 num = 1 [default = 0];
   optional int32 channels = 2 [default = 0];
   optional int32 height = 3 [default = 0];
   optional int32 width = 4 [default = 0];
+  repeated float data = 5 [packed = true];
+  repeated float diff = 6 [packed = true];
+  optional BlobShape shape = 7;
+  repeated double double_data = 8 [packed = true];
+  repeated double double_diff = 9 [packed = true];
+  // bosen 增加内容，用在pstable区分上
+  
+
+  enum BlobMode {
+    GLOBAL = 0; // the data is synced with parameter server
+    LOCAL = 1;  // the data is local
+  }
+  optional BlobMode blob_mode = 10 [default = LOCAL];
+  optional int32 global_id = 11 [default = -1];
 }
 
 // The BlobProtoVector is simply a way to pass multiple blobproto instances
@@ -63,18 +80,16 @@ message FillerParameter {
 
 message NetParameter {
   optional string name = 1; // consider giving the network a name
+    // DEPRECATED: use 'layer' instead.
+  repeated V1LayerParameter layers = 2;
   // The input blobs to the network.
   repeated string input = 3;
-  // The shape of the input blobs.
-  repeated BlobShape input_shape = 8;
-
   // 4D input dimensions -- deprecated.  Use "shape" instead.
   // If specified, for each input blob there should be four
   // values specifying the num, channels, height and width of the input blob.
   // Thus, there should be a total of (4 * #input) numbers.
   repeated int32 input_dim = 4;
-
-  // Whether the network will force every layer to carry out backward operation.
+    // Whether the network will force every layer to carry out backward operation.
   // If set False, then whether to carry out backward is determined
   // automatically according to the net structure and learning rates.
   optional bool force_backward = 5 [default = false];
@@ -86,13 +101,23 @@ message NetParameter {
   // Print debugging information about results while running Net::Forward,
   // Net::Backward, and Net::Update.
   optional bool debug_info = 7 [default = false];
-
+  
+  //bosen新加内容
+  repeated LayerParameter layers_bosen = 9; // a bunch of layers.
+ 
+  // The shape of the input blobs.
+  repeated BlobShape input_shape = 8;
   // The layers that make up the net.  Each of their configurations, including
   // connectivity and behavior, is specified as a LayerParameter.
+  //caffe与bosen-caffe的不同，需要将layers改成layer
   repeated LayerParameter layer = 100;  // ID 100 so layers are printed last.
+  
 
-  // DEPRECATED: use 'layer' instead.
-  repeated V1LayerParameter layers = 2;
+
+
+
+
+
 }
 
 // NOTE
@@ -114,47 +139,23 @@ message SolverParameter {
   // A test_level and/or a test_stage may also be specified for each test_net.
   //////////////////////////////////////////////////////////////////////////////
 
-  // Proto filename for the train net, possibly combined with one or more
-  // test nets.
-  optional string net = 24;
-  // Inline train net param, possibly combined with one or more test nets.
-  optional NetParameter net_param = 25;
+  
 
   optional string train_net = 1; // Proto filename for the train net.
   repeated string test_net = 2; // Proto filenames for the test nets.
-  optional NetParameter train_net_param = 21; // Inline train net params.
-  repeated NetParameter test_net_param = 22; // Inline test net params.
-
-  // The states for the train/test nets. Must be unspecified or
-  // specified once per net.
-  //
-  // By default, all states will have solver = true;
-  // train_state will have phase = TRAIN,
-  // and all test_state's will have phase = TEST.
-  // Other defaults are set according to the NetState defaults.
-  optional NetState train_state = 26;
-  repeated NetState test_state = 27;
-
-  // The number of iterations for each test net.
+   // The number of iterations for each test net.
   repeated int32 test_iter = 3;
 
   // The number of iterations between two testing phases.
   optional int32 test_interval = 4 [default = 0];
-  optional bool test_compute_loss = 19 [default = false];
-  // If true, run an initial test pass before the first iteration,
-  // ensuring memory availability and printing the starting value of the loss.
-  optional bool test_initialization = 32 [default = true];
+  
   optional float base_lr = 5; // The base learning rate
   // the number of iterations between displaying info. If display = 0, no info
   // will be displayed.
   optional int32 display = 6;
-  // Display the loss averaged over the last average_loss iterations
-  optional int32 average_loss = 33 [default = 1];
-  optional int32 max_iter = 7; // the maximum number of iterations
-  // accumulate gradients over `iter_size` x `batch_size` instances
-  optional int32 iter_size = 36 [default = 1];
-
-  // The learning rate decay policy. The currently implemented learning rate
+   optional int32 max_iter = 7; // the maximum number of iterations
+   
+     // The learning rate decay policy. The currently implemented learning rate
   // policies are as follows:
   //    - fixed: always return base_lr.
   //    - step: return base_lr * gamma ^ (floor(iter / step))
@@ -174,23 +175,69 @@ message SolverParameter {
   optional float power = 10; // The parameter to compute the learning rate.
   optional float momentum = 11; // The momentum value.
   optional float weight_decay = 12; // The weight decay.
-  // regularization types supported: L1 and L2
+    // regularization types supported: L1 and L2
   // controlled by weight_decay
   optional string regularization_type = 29 [default = "L2"];
   // the stepsize for learning rate policy "step"
   optional int32 stepsize = 13;
-  // the stepsize for learning rate policy "multistep"
-  repeated int32 stepvalue = 34;
-
-  // Set clip_gradients to >= 0 to clip parameter gradients to that L2 norm,
-  // whenever their actual L2 norm is larger.
-  optional float clip_gradients = 35 [default = -1];
-
-  optional int32 snapshot = 14 [default = 0]; // The snapshot interval
+  
+   optional int32 snapshot = 14 [default = 0]; // The snapshot interval
   optional string snapshot_prefix = 15; // The prefix for the snapshot.
   // whether to snapshot diff in the results or not. Snapshotting diff will help
   // debugging but the final protocol buffer size will be much larger.
   optional bool snapshot_diff = 16 [default = false];
+    optional SolverMode solver_mode = 17 [default = GPU];
+  // the device_id will that be used in GPU mode. Use device_id = 0 in default.
+  optional int32 device_id = 18 [default = 0];
+   optional bool test_compute_loss = 19 [default = false];
+  optional NetParameter train_net_param = 21; // Inline train net params.
+  repeated NetParameter test_net_param = 22; // Inline test net params.
+
+// Proto filename for the train net, possibly combined with one or more
+  // test nets.
+   // If true, print information about the state of the net that may help with
+  // debugging learning problems.
+  optional bool debug_info = 23 [default = false];
+  optional string net = 24;
+  // Inline train net param, possibly combined with one or more test nets.
+  optional NetParameter net_param = 25;
+  
+  // The states for the train/test nets. Must be unspecified or
+  // specified once per net.
+  //
+  // By default, all states will have solver = true;
+  // train_state will have phase = TRAIN,
+  // and all test_state's will have phase = TEST.
+  // Other defaults are set according to the NetState defaults.
+  optional NetState train_state = 26;
+  repeated NetState test_state = 27;
+
+ 
+ 
+  // If true, run an initial test pass before the first iteration,
+  // ensuring memory availability and printing the starting value of the loss.
+  optional bool test_initialization = 32 [default = true];
+  
+  // Display the loss averaged over the last average_loss iterations
+  optional int32 average_loss = 33 [default = 1];
+   // the stepsize for learning rate policy "multistep"
+  repeated int32 stepvalue = 34;
+    // Set clip_gradients to >= 0 to clip parameter gradients to that L2 norm,
+  // whenever their actual L2 norm is larger.
+  optional float clip_gradients = 35 [default = -1];
+  // accumulate gradients over `iter_size` x `batch_size` instances
+  optional int32 iter_size = 36 [default = 1];
+
+  // RMSProp decay value
+  // MeanSquare(t) = rms_decay*MeanSquare(t-1) + (1-rms_decay)*SquareGradient(t)
+  optional float rms_decay = 38;
+
+
+
+
+
+
+ 
   enum SnapshotFormat {
     HDF5 = 0;
     BINARYPROTO = 1;
@@ -201,9 +248,7 @@ message SolverParameter {
     CPU = 0;
     GPU = 1;
   }
-  optional SolverMode solver_mode = 17 [default = GPU];
-  // the device_id will that be used in GPU mode. Use device_id = 0 in default.
-  optional int32 device_id = 18 [default = 0];
+
   // If non-negative, the seed with which the Solver will initialize the Caffe
   // random number generator -- useful for reproducible results. Otherwise,
   // (and by default) initialize using a seed derived from the system clock.
@@ -224,16 +269,15 @@ message SolverParameter {
   // parameters for the Adam solver
   optional float momentum2 = 39 [default = 0.999];
 
-  // RMSProp decay value
-  // MeanSquare(t) = rms_decay*MeanSquare(t-1) + (1-rms_decay)*SquareGradient(t)
-  optional float rms_decay = 38;
 
-  // If true, print information about the state of the net that may help with
-  // debugging learning problems.
-  optional bool debug_info = 23 [default = false];
+
+ 
 
   // If false, don't save a snapshot after training finishes.
   optional bool snapshot_after_train = 28 [default = true];
+  //bosen新加内容
+  // layer_name => vector of blobs' global indexes 
+  repeated LayerPSTablePair layer_blobs_global_idx = 100;
 }
 
 // A message that stores the solver snapshots
@@ -273,30 +317,12 @@ message NetStateRule {
   repeated string not_stage = 5;
 }
 
-// Specifies training parameters (multipliers on global learning constants,
-// and the name and other settings used for weight sharing).
-message ParamSpec {
-  // The names of the parameter blobs -- useful for sharing parameters among
-  // layers, but never required otherwise.  To share a parameter between two
-  // layers, give it a (non-empty) name.
-  optional string name = 1;
-
-  // Whether to require shared weights to have the same shape, or just the same
-  // count -- defaults to STRICT if unspecified.
-  optional DimCheckMode share_mode = 2;
-  enum DimCheckMode {
-    // STRICT (default) requires that num, channels, height, width each match.
-    STRICT = 0;
-    // PERMISSIVE requires only the count (num*channels*height*width) to match.
-    PERMISSIVE = 1;
-  }
-
-  // The multiplier on the global learning rate for this parameter.
-  optional float lr_mult = 3 [default = 1.0];
-
-  // The multiplier on the global weight decay for this parameter.
-  optional float decay_mult = 4 [default = 1.0];
+//bosen新加内容
+message LayerPSTablePair {
+  required string layer_name = 1;
+  repeated int32 table_id = 2;
 }
+
 
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
@@ -304,6 +330,7 @@ message ParamSpec {
 // LayerParameter next available layer-specific ID: 139 (last added: tile_param)
 message LayerParameter {
   optional string name = 1; // the layer name
+  
   optional string type = 2; // the layer type
   repeated string bottom = 3; // the name of each bottom blob
   repeated string top = 4; // the name of each top blob
@@ -314,14 +341,14 @@ message LayerParameter {
   // The amount of weight to assign each top blob in the objective.
   // Each layer assigns a default value, usually of either 0 or 1,
   // to each top blob.
-  repeated float loss_weight = 5;
+  //repeated float loss_weight = 5;
 
   // Specifies training parameters (multipliers on global learning constants,
   // and the name and other settings used for weight sharing).
-  repeated ParamSpec param = 6;
+    repeated ParamSpec param = 6;
 
   // The blobs containing the numeric parameters of the layer.
-  repeated BlobProto blobs = 7;
+  //repeated BlobProto blobs = 7;
 
   // Specifies on which bottoms the backpropagation should be skipped.
   // The size must be either 0 or equal to the number of bottoms.
@@ -335,15 +362,88 @@ message LayerParameter {
   // included/excluded.
   repeated NetStateRule include = 8;
   repeated NetStateRule exclude = 9;
-
+//bosen新增内容
+ // NOTE
+  // Add new LayerTypes to the enum below in lexicographical order (other than
+  // starting with NONE), starting with the next available ID in the comment
+  // line above the enum. Update the next available ID when you add a new
+  // LayerType.
+  //
+  // LayerType next available ID: 38 (last added: CONTRASTIVE_LOSS)
+  enum LayerType {
+    // "NONE" layer type is 0th enum element so that we don't cause confusion
+    // by defaulting to an existent LayerType (instead, should usually error if
+    // the type is unspecified).
+    NONE = 0;
+    ABSVAL = 35;
+    ACCURACY = 1;
+    ARGMAX = 30;
+    BNLL = 2;
+    CONCAT = 3;
+    CONTRASTIVE_LOSS = 37;
+    CONVOLUTION = 4;
+    DATA = 5;
+    DROPOUT = 6;
+    DUMMY_DATA = 32;
+    EUCLIDEAN_LOSS = 7;
+    ELTWISE = 25;
+    FLATTEN = 8;
+    HDF5_DATA = 9;
+    HDF5_OUTPUT = 10;
+    HINGE_LOSS = 28;
+    IM2COL = 11;
+    IMAGE_DATA = 12;
+    INFOGAIN_LOSS = 13;
+    INNER_PRODUCT = 14;
+    LRN = 15;
+    MEMORY_DATA = 29;
+    MULTINOMIAL_LOGISTIC_LOSS = 16;
+    MVN = 34;
+    POOLING = 17;
+    POWER = 26;
+    RELU = 18;
+    SIGMOID = 19;
+    SIGMOID_CROSS_ENTROPY_LOSS = 27;
+    SILENCE = 36;
+    SOFTMAX = 20;
+    SOFTMAX_LOSS = 21;
+    SPLIT = 22;
+    SLICE = 33;
+    TANH = 23;
+    WINDOW_DATA = 24;
+    THRESHOLD = 31;
+  }
+  //bosen新加内容,重新封装了layer_type
+    optional LayerType type_bosen = 1005; // the layer type from the enum above
+  
+   // The blobs containing the numeric parameters of the layer
+  
+  repeated BlobProto blobs = 1006;
+  //bosen新加内容
+   // The ratio that is multiplied on the global learning rate. If you want to
+  // set the learning ratio for one blob, you need to set it for all blobs.
+  repeated float blobs_lr = 1007;
+  //bosen新加内容
+  // The weight decay that is multiplied on the global weight decay.
+  repeated float weight_decay = 1008;
+   
+     // The amount of weight to assign each top blob in the objective.
+  // Each layer assigns a default value, usually of either 0 or 1,
+  // to each top blob.
+  repeated float loss_weight = 1035;
+   
   // Parameters for data pre-processing.
-  optional TransformationParameter transform_param = 100;
+ // optional TransformationParameter transform_param = 100;
 
   // Parameters shared by loss layers.
   optional LossParameter loss_param = 101;
 
   // Layer type-specific parameters.
   //
+
+
+
+
   // Note: certain layers may have more than one computational engine
   // for their implementation. These layers include an Engine type and
   // engine parameter for selecting the implementation.
@@ -385,7 +485,74 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional WindowDataParameter window_data_param = 129;
+  
+  //新增bosen 内容
+    // The names of the parameter blobs -- useful for sharing parameters among
+  // layers (but never required).
+  //原生caffe定义为：repeated ParamSpec param
+  repeated string param_bosen = 1001;
+  // Whether to require shared weights to have the same shape, or just the same
+  // count -- defaults to STRICT if unspecified.
+  repeated DimCheckMode blob_share_mode = 1002;
+  enum DimCheckMode {
+    // STRICT (default) requires that num, channels, height, width each match.
+    STRICT = 0;
+    // PERMISSIVE requires only the count (num*channels*height*width) to match.
+    PERMISSIVE = 1;
+    }
+
+      // Parameters for data pre-processing.
+  optional TransformationParameter transform_param = 36;
+
+  // Note: certain layers may have more than one computational engine
+  // for their implementation. These layers include an Engine type and
+  // engine parameter for selecting the implementation.
+  // The default for the engine is set by the ENGINE switch at compile-time.
+
+  // DEPRECATED: The layer parameters specified as a V0LayerParameter.
+  // This should never be used by any code except to upgrade to the new
+  // LayerParameter specification.
+  optional V0LayerParameter layer = 10000;
+  
+  
 }
+
+
+
+
+
+
+
+
+
+
+
+// Specifies training parameters (multipliers on global learning constants,
+// and the name and other settings used for weight sharing).
+message ParamSpec {
+  // The names of the parameter blobs -- useful for sharing parameters among
+  // layers, but never required otherwise.  To share a parameter between two
+  // layers, give it a (non-empty) name.
+  optional string name = 1;
+
+  // Whether to require shared weights to have the same shape, or just the same
+  // count -- defaults to STRICT if unspecified.
+  optional DimCheckMode share_mode = 2;
+  enum DimCheckMode {
+    // STRICT (default) requires that num, channels, height, width each match.
+    STRICT = 0;
+    // PERMISSIVE requires only the count (num*channels*height*width) to match.
+    PERMISSIVE = 1;
+  }
+
+  // The multiplier on the global learning rate for this parameter.
+  optional float lr_mult = 3 [default = 1.0];
+
+  // The multiplier on the global weight decay for this parameter.
+  optional float decay_mult = 4 [default = 1.0];
+}
+
+
 
 // Message that stores parameters used to apply transformation
 // to the data layer's data
@@ -421,6 +588,8 @@ message LossParameter {
 
 // Messages that store parameters used by individual layer types follow, in
 // alphabetical order.
+
+
 
 message AccuracyParameter {
   // When computing accuracy, count as correct by comparing the true label to
@@ -509,6 +678,9 @@ message DataParameter {
   // DEPRECATED. Each solver accesses a different subset of the database.
   optional uint32 rand_skip = 7 [default = 0];
   optional DB backend = 8 [default = LEVELDB];
+  //bosen新增内容
+  optional bool shared_file_system = 1009 [default = false];
+  
   // DEPRECATED. See TransformationParameter. For data pre-processing, we can do
   // simple scaling and subtracting the data mean, if provided. Note that the
   // mean subtraction is always carried out before scaling.
@@ -563,6 +735,10 @@ message EltwiseParameter {
   // of computing the gradient for the PROD operation. (No effect for SUM op.)
   optional bool stable_prod_grad = 3 [default = true];
 }
+
+
+
+
 
 // Message that stores parameters used by EmbedLayer
 message EmbedParameter {
@@ -645,6 +821,9 @@ message ImageDataParameter {
   optional uint32 new_width = 10 [default = 0];
   // Specify if the images are color or gray
   optional bool is_color = 11 [default = true];
+  //bosen新加内容
+  optional bool shared_file_system = 1011 [default = false];
+  
   // DEPRECATED. See TransformationParameter. For data pre-processing, we can do
   // simple scaling and subtracting the data mean, if provided. Note that the
   // mean subtraction is always carried out before scaling.
@@ -717,6 +896,7 @@ message MVNParameter {
   optional float eps = 3 [default = 1e-9];
 }
 
+// Message that stores parameters used by PoolingLayer
 message PoolingParameter {
   enum PoolMethod {
     MAX = 0;
@@ -746,6 +926,7 @@ message PoolingParameter {
   optional bool global_pooling = 12 [default = false];
 }
 
+// Message that stores parameters used by PowerLayer
 message PowerParameter {
   // PowerLayer computes outputs y = (shift + scale * x) ^ power.
   optional float power = 1 [default = 1.0];
