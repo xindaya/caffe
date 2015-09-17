@@ -112,4 +112,11 @@ ps/src/ml/disk_stream/*.o
 ps/src/ml/util/*.o
 ps/lib/*.a
 # end Petuum
-#
+# third_party
+
+third_party/bin/*
+third_party/include/*
+third_party/lib/*
+third_party/share/*
+third_party/src/*
+
