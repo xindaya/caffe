@@ -49,6 +49,7 @@ static void apply_buffers(const vector<Blob<Dtype>*>& blobs,
       case replace_cpu_diff:
         blobs[i]->diff()->set_cpu_data(ptr);
         break;
+      // 将原来存放w,b的blob的指针，指向在GPUParams 类中申请并同步的显存
       case replace_gpu_diff:
         blobs[i]->diff()->set_gpu_data(ptr);
         break;
@@ -77,6 +78,7 @@ Params<Dtype>::Params(shared_ptr<Solver<Dtype> > root_solver)
       diff_() {
 }
 
+// 利用root_solver 的w,b数值赋值
 template<typename Dtype>
 GPUParams<Dtype>::GPUParams(shared_ptr<Solver<Dtype> > root_solver, int device)
     : Params<Dtype>(root_solver) {
@@ -89,6 +91,7 @@ GPUParams<Dtype>::GPUParams(shared_ptr<Solver<Dtype> > root_solver, int device)
   CUDA_CHECK(cudaMalloc(&data_, size_ * sizeof(Dtype)));
 
   // Copy blob values
+  // 使用root_solver的数据覆盖掉新申请的空间的内容
   const vector<Blob<Dtype>*>& net =
       root_solver->net()->learnable_params();
   apply_buffers(net, data_, size_, copy);
@@ -114,6 +117,7 @@ template<typename Dtype>
 void GPUParams<Dtype>::configure(Solver<Dtype>* solver) const {
   const vector<Blob<Dtype>*>& net =
       solver->net()->learnable_params();
+  // 使用data_覆盖掉新的net中的blob
   apply_buffers(net, data_, size_, replace_gpu);
   apply_buffers(net, diff_, size_, replace_gpu_diff);
 }
@@ -212,6 +216,7 @@ P2PSync<Dtype>::P2PSync(shared_ptr<Solver<Dtype> > root_solver,
       initial_iter_(root_solver->iter()),
       solver_() {
 #ifndef CPU_ONLY
+  // 保留现场环境
   int initial_device;
   CUDA_CHECK(cudaGetDevice(&initial_device));
   // 不同的线程，绑定的device_id 是不同的
@@ -223,10 +228,10 @@ P2PSync<Dtype>::P2PSync(shared_ptr<Solver<Dtype> > root_solver,
   if (parent == NULL) {
     solver_ = root_solver;
   } else {
+    // 从代码里看，这个set_root_solver()的意思是标记，是否已经完成了root_solver的设置工作
     Caffe::set_root_solver(false);
-    // solver_ 是root_solver
     // 如果有parent那么就是说这个是worker
-    // 所以要用worker来初始化
+    // 所以要用workerSolver来初始化
     solver_.reset(new WorkerSolver<Dtype>(param, root_solver.get()));
     Caffe::set_root_solver(true);
   }
@@ -392,6 +397,14 @@ void P2PSync<Dtype>::on_gradients_ready() {
 template<typename Dtype>
 void P2PSync<Dtype>::run(const vector<int>& gpus) {
   // Pair devices for map-reduce synchronization
+  // (0,1) (0,2) (2,3)
+  //    0
+  //  /  \
+  // 1    2
+  //     /
+  //    3
+  //    对于4GPU卡的机器的拓扑结构
+  //    以及他们构成的tree结构
   vector<DevicePair> pairs;
   DevicePair::compute(gpus, &pairs);
   ostringstream s;
@@ -404,6 +417,11 @@ void P2PSync<Dtype>::run(const vector<int>& gpus) {
   vector<shared_ptr<P2PSync<Dtype> > > syncs(gpus.size());
 
   // Build the GPU tree by finding the parent for each solver
+  //    0
+  //  /  \
+  // 1    2
+  //     /
+  //    3
   for (int attempts = 0; attempts < pairs.size(); ++attempts) {
     for (int i = 1; i < pairs.size(); ++i) {
       if (!syncs[i].get()) {
@@ -420,7 +438,9 @@ void P2PSync<Dtype>::run(const vector<int>& gpus) {
         if (parent) {
 	// 这里设置了关键的一个信息
 	// deviceid
+	// 只修改了param 的设备id
           param.set_device_id(pairs[i].device());
+	  // solver_ 还是root_solver
           syncs[i].reset(new P2PSync<Dtype>(solver_, parent, param));
           parent->children_.push_back((P2PSync<Dtype>*) syncs[i].get());
         }
