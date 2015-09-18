@@ -29,9 +29,9 @@ class Net {
   explicit Net(const int thread_id, const int net_id)
       : thread_id_(thread_id), net_id_(net_id) {};
   //explicit Net(const NetParameter& param, const Net* root_net = NULL); // original version
-  explicit Net(const NetParameter& param, const Net* root_net = NULL, const int thread_id, const int net_id);
+  explicit Net(const NetParameter& param, const Net* root_net = NULL, const int thread_id = 0, const int net_id = 0);
   //explicit Net(const string& param_file, Phase phase, const Net* root_net = NULL); // original version
-  explicit Net(const string& param_file, Phase phase, const Net* root_net = NULL, const int thread_id, const int net_id);
+  explicit Net(const string& param_file, Phase phase, const Net* root_net = NULL, const int thread_id = 0, const int net_id = 0);
   virtual ~Net() {}
 
   /// @brief Initialize a network with a NetParameter.
