@@ -74,7 +74,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   //FilterNet(in_param, &filtered_param);
   FilterNet(in_param, &filtered_param, thread_id_);
   //if (Caffe::root_solver()) {
-  if (client_id_ == 0 && thread_id == 0 && Caffe::root_solver())
+  if (client_id_ == 0 && thread_id_ == 0 && Caffe::root_solver())
     LOG(INFO) << "Initializing net from parameters: " << std::endl
               << filtered_param.DebugString();
   }

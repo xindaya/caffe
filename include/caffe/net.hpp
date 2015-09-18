@@ -25,6 +25,9 @@ class Net {
  public:
 // -----------------------------modification part-------------------------------
 // question???? => how to modify the construction function
+  // Add construction function to initial "thread_id & net_id" with "thread_id_ & net_id_" 
+  explicit Net(const int thread_id, const int net_id)
+      : thread_id_(thread_id), net_id_(net_id) {};
   //explicit Net(const NetParameter& param, const Net* root_net = NULL); // original version
   explicit Net(const NetParameter& param, const Net* root_net = NULL, const int thread_id, const int net_id);
   //explicit Net(const string& param_file, Phase phase, const Net* root_net = NULL); // original version
