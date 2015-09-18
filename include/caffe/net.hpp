@@ -278,14 +278,14 @@ class Net {
   /// @brief Helper for displaying debug info in Forward about input Blobs.
 // -----------------------------not modification part-------------------------------
 // Function "ForwardDebugInfo, BackwardDebugInfo & UpdateDebugInfo" has been appeared in public
-// not in protected, these duplicates remain to be solved
+// not in protected, these duplicates remain to be solved, currently annotation
   void InputDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Forward.
-  void ForwardDebugInfo(const int layer_id);
+  //void ForwardDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Backward.
-  void BackwardDebugInfo(const int layer_id);
+  //void BackwardDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Update.
-  void UpdateDebugInfo(const int param_id);
+  //void UpdateDebugInfo(const int param_id);
 // -----------------------------not modification part-------------------------------
   /// @brief The network name
   string name_;
