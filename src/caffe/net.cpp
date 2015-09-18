@@ -27,7 +27,22 @@ namespace caffe {
 
 template <typename Dtype>
 // -----------------------------modification part-------------------------------
-// UNSOLVED!!!!! construction function REMAIN to be solved!!!!!!!
+// New Version, add "thread_id & net_id" in
+Net<Dtype>::Net(const NetParameter& param, const Net* root_net, const int thread_id, const int net_id)
+    : root_net_(root_net), thread_id_(thread_id), net_id_(net_id) {
+  Init(param);
+}
+
+template <typename Dtype>
+Net<Dtype>::Net(const string& param_file, Phase phase, const Net* root_net, const int thread_id, const int net_id)
+    : root_net_(root_net), thread_id_(thread_id), net_id_(net_id) {
+  NetParameter param;
+  ReadNetParamsFromTextFileOrDie(param_file, &param);
+  param.mutable_state()->set_phase(phase);
+  Init(param);
+}
+/*
+// these two construction function are original version
 Net<Dtype>::Net(const NetParameter& param, const Net* root_net)
     : root_net_(root_net) {
   Init(param);
@@ -41,7 +56,7 @@ Net<Dtype>::Net(const string& param_file, Phase phase, const Net* root_net)
   param.mutable_state()->set_phase(phase);
   Init(param);
 }
-
+*/
 template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
 // -----------------------------modification part------------------------------- 
