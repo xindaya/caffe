@@ -25,9 +25,10 @@ class Net {
  public:
 // -----------------------------modification part-------------------------------
 // question???? => how to modify the construction function
-  explicit Net(const NetParameter& param, const Net* root_net = NULL);
-  explicit Net(const string& param_file, Phase phase,
-      const Net* root_net = NULL);
+  //explicit Net(const NetParameter& param, const Net* root_net = NULL); // original version
+  explicit Net(const NetParameter& param, const Net* root_net = NULL, const int thread_id, const int net_id);
+  //explicit Net(const string& param_file, Phase phase, const Net* root_net = NULL); // original version
+  explicit Net(const string& param_file, Phase phase, const Net* root_net = NULL, const int thread_id, const int net_id);
   virtual ~Net() {}
 
   /// @brief Initialize a network with a NetParameter.
@@ -277,15 +278,15 @@ class Net {
   void GetLearningRateAndWeightDecay();
   /// @brief Helper for displaying debug info in Forward about input Blobs.
 // -----------------------------not modification part-------------------------------
-// Function "ForwardDebugInfo, BackwardDebugInfo & UpdateDebugInfo" has been appeared in public
-// not in protected, these duplicates remain to be solved
   void InputDebugInfo(const int layer_id);
+// Function "ForwardDebugInfo, BackwardDebugInfo & UpdateDebugInfo" has been appeared in public
+// not in protected, these duplicates remain to be solved, currently annotation
   /// @brief Helper for displaying debug info in Forward.
-  void ForwardDebugInfo(const int layer_id);
+  //void ForwardDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Backward.
-  void BackwardDebugInfo(const int layer_id);
+  //void BackwardDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Update.
-  void UpdateDebugInfo(const int param_id);
+  //void UpdateDebugInfo(const int param_id);
 // -----------------------------not modification part-------------------------------
   /// @brief The network name
   string name_;
