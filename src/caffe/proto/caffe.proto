@@ -102,14 +102,14 @@ message NetParameter {
   // Net::Backward, and Net::Update.
   optional bool debug_info = 7 [default = false];
   
-  //bosen新加内容
-  repeated LayerParameter layers_bosen = 9; // a bunch of layers.
+  //bosen-caffe定义的layers
+  repeated LayerParameter bosen_layers = 9; // a bunch of layers.
  
   // The shape of the input blobs.
   repeated BlobShape input_shape = 8;
   // The layers that make up the net.  Each of their configurations, including
   // connectivity and behavior, is specified as a LayerParameter.
-  //caffe与bosen-caffe的不同，需要将layers改成layer
+  //caffe定义的layer与bosen-caffe定义的layers
   repeated LayerParameter layer = 100;  // ID 100 so layers are printed last.
   
 
@@ -414,7 +414,7 @@ message LayerParameter {
     THRESHOLD = 31;
   }
   //bosen新加内容,重新封装了layer_type
-    optional LayerType type_bosen = 1005; // the layer type from the enum above
+    optional LayerType bosen_type = 1005; // the layer type from the enum above
   
    // The blobs containing the numeric parameters of the layer
   
@@ -490,7 +490,7 @@ message LayerParameter {
     // The names of the parameter blobs -- useful for sharing parameters among
   // layers (but never required).
   //原生caffe定义为：repeated ParamSpec param
-  repeated string param_bosen = 1001;
+  repeated string bosen_param = 1001;
   // Whether to require shared weights to have the same shape, or just the same
   // count -- defaults to STRICT if unspecified.
   repeated DimCheckMode blob_share_mode = 1002;
