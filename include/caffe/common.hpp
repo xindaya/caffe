@@ -89,6 +89,14 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
+// -----------------------------modification part-------------------------------
+const int kDenseRowDtypeID = 0;
+// columns of net ouput tables
+const int kNumFixedCols = 3;
+const int kColIdxOutputTableIter = 0;
+const int kColIdxOutputTableTime = 1;
+const int kColIdxOutputTableLoss = 2;
+// -----------------------------modification part end-------------------------------
 // A global initialization function that you should call in your main function.
 // Currently it initializes google flags and google logging.
 void GlobalInit(int* pargc, char*** pargv);
