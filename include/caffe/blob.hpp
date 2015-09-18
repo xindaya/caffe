@@ -9,6 +9,11 @@
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/syncedmem.hpp"
 #include "caffe/util/math_functions.hpp"
+// -------------------------
+// modification part
+#include "caffe/context.hpp"
+#include <petuum_ps_common/include/petuum_ps.hpp>
+// -------------------------
 
 const int kMaxBlobAxes = 32;
 
@@ -27,9 +32,15 @@ class Blob {
   Blob()
        : data_(), diff_(), count_(0), capacity_(0) {}
 
+  // -------------------------
+  // modification part
+  // add blob_mode, global_id to construction function
   /// @brief Deprecated; use <code>Blob(const vector<int>& shape)</code>.
   explicit Blob(const int num, const int channels, const int height,
-      const int width);
+      const int width, 
+	  const BlobProto_BlobMode blob_mode = BlobProto_BlobMode_LOCAL, 
+	  const int global_id = -1);
+  // -------------------------
   explicit Blob(const vector<int>& shape);
 
   /// @brief Deprecated; use <code>Reshape(const vector<int>& shape)</code>.
@@ -49,9 +60,25 @@ class Blob {
    * an error; either Net::Forward or Net::Reshape need to be called to
    * propagate the new input shape to higher layers.
    */
+  // -------------------------
+  // modification part
+  // not that affect much
+  void Reshape(const int num, const int channels, const int height,
+    const int width);
   void Reshape(const vector<int>& shape);
   void Reshape(const BlobShape& shape);
+  // -------------------------
+  // modification part
+  /// Change the dimensions of the blob, but do not allocate memory.
+  /// This function is used for PSTable initializiation
+  void ReshapeWithoutAllocation(const int num, const int channels, 
+    const int height, const int width);
   void ReshapeLike(const Blob& other);
+  void ReshapeWithoutAllocationLike(const Blob<Dtype>& other);
+  ///  
+  void CreatePSTable();
+  // -------------------------
+  
   inline string shape_string() const {
     ostringstream stream;
     for (int i = 0; i < shape_.size(); ++i) {
@@ -74,6 +101,27 @@ class Blob {
   }
   inline int num_axes() const { return shape_.size(); }
   inline int count() const { return count_; }
+  
+  // -------------------------
+  // modification part
+  inline int global_table_row_capacity() const { return global_table_row_capacity_; }
+  inline BlobProto_BlobMode blob_mode() const { return blob_mode_; }
+  inline int global_id() const { return global_id_; }
+  inline petuum::Table<Dtype>* table() { return global_table_ptr_; }
+  inline void set_table(const int global_id, const bool reg) {
+    CHECK_EQ(blob_mode_, BlobProto_BlobMode_GLOBAL);
+    CHECK_GE(global_id, 0);
+    global_id_ = global_id;
+    global_table_ = petuum::PSTableGroup::GetTableOrDie<Dtype>(global_id_);
+    global_table_ptr_ = &global_table_;
+    if (reg) {
+      for (int ridx = 0; ridx < util::Context::num_rows_per_table(); ++ridx) {   
+        global_table_ptr_->GetAsyncForced(ridx);
+	  }
+      global_table_ptr_->WaitPendingAsyncGet();
+	}
+  }
+  // -------------------------
 
   /**
    * @brief Compute the volume of a slice; i.e., the product of dimensions
@@ -227,7 +275,15 @@ class Blob {
   Dtype* mutable_cpu_diff();
   Dtype* mutable_gpu_diff();
   void Update();
-  void FromProto(const BlobProto& proto, bool reshape = true);
+  // -------------------------
+  // modification part
+  void UpdatePSTable();
+  void UpdatePSTable(const Dtype* update);
+
+  void SyncWithPSTable(const int clock);
+  // add variable init_ps_table in
+  void FromProto(const BlobProto& proto, bool reshape = true, const bool init_ps_table = false);
+  // -------------------------
   void ToProto(BlobProto* proto, bool write_diff = false) const;
 
   /// @brief Compute the sum of absolute values (L1 norm) of the data.
@@ -266,11 +322,31 @@ class Blob {
   bool ShapeEquals(const BlobProto& other);
 
  protected:
+  // -------------------------
+  // modification part
+  Dtype* ReadPSTable(const int clock) const;
+  // -------------------------
   shared_ptr<SyncedMemory> data_;
   shared_ptr<SyncedMemory> diff_;
   vector<int> shape_;
+  // -------------------------
+  // modification part
+  // although copy for bosen caffe, I believe it's useless
+  int num_;
+  int channels_;
+  int height_;
+  int width_;
+  // -------------------------
   int count_;
   int capacity_;
+  // -------------------------
+  // modification part
+  BlobProto_BlobMode blob_mode_;
+  int global_id_;
+  petuum::Table<Dtype> global_table_;
+  petuum::Table<Dtype>* global_table_ptr_;
+  int global_table_row_capacity_;
+  // -------------------------
 
   DISABLE_COPY_AND_ASSIGN(Blob);
 };  // class Blob

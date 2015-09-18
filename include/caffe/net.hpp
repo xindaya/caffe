@@ -23,6 +23,8 @@ namespace caffe {
 template <typename Dtype>
 class Net {
  public:
+// -----------------------------modification part-------------------------------
+// question???? => how to modify the construction function
   explicit Net(const NetParameter& param, const Net* root_net = NULL);
   explicit Net(const string& param_file, Phase phase,
       const Net* root_net = NULL);
@@ -31,6 +33,10 @@ class Net {
   /// @brief Initialize a network with a NetParameter.
   void Init(const NetParameter& param);
 
+// -----------------------------modification part-------------------------------
+  const int InitPS(const NetParameter& param, const bool create_ps_tables,
+      const int num_additional_tables,
+      map<string, vector<int> >* layer_name_to_blob_global_idx);
   /**
    * @brief Run Forward with the input Blob%s already fed separately.
    *
@@ -91,6 +97,10 @@ class Net {
 
   /// @brief Updates the network weights based on the diff values computed.
   void Update();
+// -----------------------------modification part-------------------------------
+  void SyncWithPS(const int clock);
+  void RegisterNetOutputPSTable(const int num_rows);
+  
   /**
    * @brief Shares weight data of owner blobs with shared blobs.
    *
@@ -110,8 +120,14 @@ class Net {
    * @brief For an already initialized net, copies the pre-trained layers from
    *        another Net.
    */
-  void CopyTrainedLayersFrom(const NetParameter& param);
-  void CopyTrainedLayersFrom(const string trained_filename);
+// -----------------------------modification part-------------------------------
+  //void CopyTrainedLayersFrom(const NetParameter& param);
+  //void CopyTrainedLayersFrom(const string trained_filename);
+  void CopyTrainedLayersFrom(const NetParameter& param, 
+      const bool init_ps_tables = false);
+  void CopyTrainedLayersFrom(const string trained_filename, 
+      const bool init_ps_tables = false);
+
   void CopyTrainedLayersFromBinaryProto(const string trained_filename);
   void CopyTrainedLayersFromHDF5(const string trained_filename);
   /// @brief Writes the net to a proto.
@@ -130,8 +146,10 @@ class Net {
     return blobs_;
   }
   /// @brief returns the layers
-  inline const vector<shared_ptr<Layer<Dtype> > >& layers() const {
-    return layers_;
+  inline const vector<shared_ptr<Layer<Dtype> > >& layers() const { return layers_;}
+// -----------------------------modification part-------------------------------
+  inline const vector<bool>& layer_need_backward() {
+      return layer_need_backward_; 
   }
   /// @brief returns the phase: TRAIN or TEST
   inline Phase phase() const { return phase_; }
@@ -199,18 +217,37 @@ class Net {
   bool has_layer(const string& layer_name) const;
   const shared_ptr<Layer<Dtype> > layer_by_name(const string& layer_name) const;
 
+// -----------------------------modification part-------------------------------
+  void set_net_id(const int net_id) { net_id_ = net_id; }
   void set_debug_info(const bool value) { debug_info_ = value; }
+  inline bool debug_info() { return debug_info_; }
+
+  inline petuum::Table<Dtype>* table() { return &outputs_global_table_; }
+  inline void set_table(const int global_id) {
+    CHECK_GE(global_id, 0);
+    global_id_ = global_id;
+    outputs_global_table_ = petuum::PSTableGroup::GetTableOrDie<Dtype>(global_id_);
+  }
 
   // Helpers for Init.
   /**
    * @brief Remove layers that the user specified should be excluded given the current
    *        phase, level, and stage.
    */
+// -----------------------------modification part-------------------------------
   static void FilterNet(const NetParameter& param,
-      NetParameter* param_filtered);
+      NetParameter* param_filtered, const int thread_id);
+// -----------------------------modification part end-------------------------------
   /// @brief return whether NetState state meets NetStateRule rule
   static bool StateMeetsRule(const NetState& state, const NetStateRule& rule,
       const string& layer_name);
+
+  /// @brief Helper for displaying debug info in Forward.
+  void ForwardDebugInfo(const int layer_id);
+  /// @brief Helper for displaying debug info in Backward.
+  void BackwardDebugInfo(const int layer_id);
+  /// @brief Helper for displaying debug info in Update.
+  void UpdateDebugInfo(const int param_id);
 
  protected:
   // Helpers for Init.
@@ -226,7 +263,22 @@ class Net {
   void AppendParam(const NetParameter& param, const int layer_id,
                    const int param_id);
 
+// -----------------------------modification part-------------------------------
+  // Helpers for InitPS.
+  void PseudoAppendTop(const NetParameter& param, const int layer_id,
+                       const int top_id, set<string>* available_blobs,
+                       map<string, int>* blob_name_to_idx);
+  int PseudoAppendBottom(const NetParameter& param, const int layer_id, 
+                          const int bottom_id, set<string>* available_blobs, 
+                          map<string, int>* blob_name_to_idx);
+// -----------------------------modification part end-------------------------------
+
+  /// @brief Get misc parameters, e.g. the LR multiplier and weight decay.
+  void GetLearningRateAndWeightDecay();
   /// @brief Helper for displaying debug info in Forward about input Blobs.
+// -----------------------------not modification part-------------------------------
+// Function "ForwardDebugInfo, BackwardDebugInfo & UpdateDebugInfo" has been appeared in public
+// not in protected, these duplicates remain to be solved
   void InputDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Forward.
   void ForwardDebugInfo(const int layer_id);
@@ -234,7 +286,7 @@ class Net {
   void BackwardDebugInfo(const int layer_id);
   /// @brief Helper for displaying debug info in Update.
   void UpdateDebugInfo(const int param_id);
-
+// -----------------------------not modification part-------------------------------
   /// @brief The network name
   string name_;
   /// @brief The phase: TRAIN or TEST
@@ -292,6 +344,14 @@ class Net {
   size_t memory_used_;
   /// Whether to compute and display debug info for the net.
   bool debug_info_;
+// -----------------------------modification part end-------------------------------
+  int client_id_;
+  int thread_id_;  
+  /// -1 means it's the train net, >0 means it's a test net
+  int net_id_;
+  /// global table for net output blobs 
+  int global_id_;
+  petuum::Table<Dtype> outputs_global_table_;
   /// The root net that actually holds the shared layers in data parallelism
   const Net* const root_net_;
   DISABLE_COPY_AND_ASSIGN(Net);

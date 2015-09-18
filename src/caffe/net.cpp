@@ -14,14 +14,20 @@
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/util/hdf5.hpp"
 #include "caffe/util/insert_splits.hpp"
+#include "caffe/util/io.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/upgrade_proto.hpp"
-
+#include "caffe/context.hpp"
+#include <petuum_ps_common/include/petuum_ps.hpp>
+#include <petuum_ps_common/include/system_gflags_declare.hpp>
+#include <petuum_ps_common/include/init_table_group_config.hpp>
 #include "caffe/test/test_caffe_main.hpp"
 
 namespace caffe {
 
 template <typename Dtype>
+// -----------------------------modification part-------------------------------
+// UNSOLVED!!!!! construction function REMAIN to be solved!!!!!!!
 Net<Dtype>::Net(const NetParameter& param, const Net* root_net)
     : root_net_(root_net) {
   Init(param);
@@ -38,6 +44,10 @@ Net<Dtype>::Net(const string& param_file, Phase phase, const Net* root_net)
 
 template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
+// -----------------------------modification part------------------------------- 
+  util::Context& context = util::Context::get_instance();
+  client_id_ = context.get_int32("client_id");
+// -----------------------------modification part end-------------------------------   
   CHECK(Caffe::root_solver() || root_net_)
       << "root_net_ needs to be set for all non-root solvers";
   // Set phase from the state.
@@ -45,8 +55,11 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   // Filter layers based on their include/exclude rules and
   // the current NetState.
   NetParameter filtered_param;
-  FilterNet(in_param, &filtered_param);
-  if (Caffe::root_solver()) {
+// -----------------------------modification part------------------------------- 
+  //FilterNet(in_param, &filtered_param);
+  FilterNet(in_param, &filtered_param, thread_id_);
+  //if (Caffe::root_solver()) {
+  if (client_id_ == 0 && thread_id == 0 && Caffe::root_solver())
     LOG(INFO) << "Initializing net from parameters: " << std::endl
               << filtered_param.DebugString();
   }
@@ -73,15 +86,21 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     const int layer_id = -1;  // inputs have fake layer ID -1
     AppendTop(param, layer_id, input_id, &available_blobs, &blob_name_to_idx);
   }
-  DLOG_IF(INFO, Caffe::root_solver())
-      << "Memory required for data: " << memory_used_ * sizeof(Dtype);
+// -----------------------------modification part------------------------------- 
+  //DLOG_IF(INFO, Caffe::root_solver())
+  //    << "Memory required for data: " << memory_used_ * sizeof(Dtype);
+  if (client_id_ == 0 && thread_id_ == 0) {
+    DLOG_IF(INFO, Caffe::root_solver())
+	    << "Memory required for data: " << memory_used_ * sizeof(Dtype);
+  }
+// -----------------------------modification part end------------------------------- 
   // For each layer, set up its input and output
   bottom_vecs_.resize(param.layer_size());
   top_vecs_.resize(param.layer_size());
   bottom_id_vecs_.resize(param.layer_size());
-  param_id_vecs_.resize(param.layer_size());
   top_id_vecs_.resize(param.layer_size());
   bottom_need_backward_.resize(param.layer_size());
+  param_id_vecs_.resize(param.layer_size());
   for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id) {
     // For non-root solvers, whether this layer is shared from root_net_.
     bool share_from_root = !Caffe::root_solver()
@@ -103,10 +122,14 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       layers_.push_back(root_net_->layers_[layer_id]);
       layers_[layer_id]->SetShared(true);
     } else {
+// -----------------------------modification part------------------------------- 
+// remain puzzle ====> CreateLayer or GetLayer ????	
       layers_.push_back(LayerRegistry<Dtype>::CreateLayer(layer_param));
     }
     layer_names_.push_back(layer_param.name());
-    if (Caffe::root_solver()) {
+// -----------------------------modification part------------------------------- 
+    //if (Caffe::root_solver()) {
+	if (client_id_ == 0 && thread_id_ == 0 && Caffe:root_solver()) {
       LOG(INFO) << "Creating Layer " << layer_param.name();
     }
     bool need_backward = false;
@@ -138,6 +161,11 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
     // After this layer is connected, set it up.
+// -----------------------------modification part------------------------------- 
+    //if (Caffe::root_solver()) {
+	if (client_id_ == 0 && thread_id_ == 0 && Caffe::root_solver()) {
+      LOG(INFO) << "Setting up " << layer_names_[layer_id];
+    }
     if (share_from_root) {
       // Set up size of top blobs using root_net_
       const vector<Blob<Dtype>*>& base_top = root_net_->top_vecs_[layer_id];
@@ -151,15 +179,14 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     } else {
       layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
     }
-    if (Caffe::root_solver()) {
-      LOG(INFO) << "Setting up " << layer_names_[layer_id];
-    }
     for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
       if (blob_loss_weights_.size() <= top_id_vecs_[layer_id][top_id]) {
         blob_loss_weights_.resize(top_id_vecs_[layer_id][top_id] + 1, Dtype(0));
       }
       blob_loss_weights_[top_id_vecs_[layer_id][top_id]] = layer->loss(top_id);
-      if (Caffe::root_solver()) {
+// -----------------------------modification part------------------------------- 
+      //if (Caffe::root_solver()) {
+	  if (client_id_ == 0 && thread_id_ == 0 && Caffe::root_solver()) {
         LOG(INFO) << "Top shape: "
                   << top_vecs_[layer_id][top_id]->shape_string();
       }
@@ -170,10 +197,13 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
       memory_used_ += top_vecs_[layer_id][top_id]->count();
     }
-    if (Caffe::root_solver()) {
-      DLOG(INFO) << "Memory required for data: "
-                 << memory_used_ * sizeof(Dtype);
+// -----------------------------modification part-------------------------------
+    //if (Caffe::root_solver()) {
+	if (client_id_ == 0 && thread_id_ == 0 && Caffe::root_solver()) {
+      DLOG(INFO) << "Memory required for data: " << memory_used_ * sizeof(Dtype);
     }
+	const int blobs_lr_size = layer_param.blobs_lr_size();
+// -----------------------------modification part end-------------------------------
     const int param_size = layer_param.param_size();
     const int num_param_blobs = layers_[layer_id]->blobs().size();
     CHECK_LE(param_size, num_param_blobs)

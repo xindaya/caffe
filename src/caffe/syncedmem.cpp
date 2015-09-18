@@ -92,7 +92,13 @@ void SyncedMemory::set_cpu_data(void* data) {
   head_ = HEAD_AT_CPU;
   own_cpu_data_ = false;
 }
-
+// ---------------------------------------------------------------------------
+// modification part
+void SyncedMemory::set_cpu_ps_data(void* data) {
+  set_cpu_data(data);
+  own_cpu_data_ = true;
+}
+// ---------------------------------------------------------------------------
 const void* SyncedMemory::gpu_data() {
 #ifndef CPU_ONLY
   to_gpu();
