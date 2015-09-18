@@ -60,11 +60,6 @@ class Blob {
    * an error; either Net::Forward or Net::Reshape need to be called to
    * propagate the new input shape to higher layers.
    */
-  // -------------------------
-  // modification part
-  // not that affect much
-  void Reshape(const int num, const int channels, const int height,
-    const int width);
   void Reshape(const vector<int>& shape);
   void Reshape(const BlobShape& shape);
   // -------------------------
