@@ -1,6 +1,7 @@
 # Net源码修改记录
 
 **注意：**
+
 为了表述方便：
 A版本caffe：bosen下的（单卡）caffe
 B版本caffe：多卡caffe
@@ -10,11 +11,11 @@ B版本caffe：多卡caffe
 
 任务就是要将A版本caffe中**关于bosen的东西**移植到B中
 
-`net.hpp`遗留的问题：
-- 构造函数如何修改
-- `ForwardDebugInfo`等三个函数是放在`public`还是放在`protected`中？
+`net.hpp`不太确定的问题：
+- 构造函数如何修改（目前方案是直接融合变量）
+- `ForwardDebugInfo`等三个函数是放在`public`还是放在`protected`中？（目前是放在public中，将protected的注释）
 
-`net.cpp`遗留的问题：
+`net.cpp`不太确定的问题：
  - 构造函数如何修改（与hpp一致）
  - A版本有一个`GetLayer`，在B版本中是`CreateLayer`，目前留下`remain puzzle`标记，并没做任何修改
 
@@ -46,5 +47,5 @@ B版本caffe：多卡caffe
  - `ForwardFromTo`中涉及到layer操作，A版本输入变量加了指针，而B版本则是引用，因而全部以引用为准（layer未改）
  - `CopyTrainedLayersFrom`修改了`target_blobs`的`FromProto`设置，加入了`client_id`和`thread_id`的判断逻辑。
  - `ToProto`增加了几行循环，包括`add_bottom`和`add_top`操作
- - **`Update`**A版本似乎增加了不少，包含`owner_diff`等，首先B版本中的`learnable_params_`和A版本的`params_`是一样的含义，B版本是直接调用blob的update进行更新，做的是$w+\Delta w$更新，而A版本则是在net的update中直接进行`diff`的add操作，操作内容似乎不同。B版本中是在solver的ApplyUpdate中调用net的update，A版本的solver中并没有该update，似乎都是通过UpdatePSTable和SyncWithPSTable来进行的。**先保持现状暂时不做任何修改**
+ - **`Update`**A版本似乎增加了不少，包含`owner_diff`等，首先B版本中的`learnable_params_`和A版本的`params_`是一样的含义，B版本是直接调用blob的update进行更新，做的是$w+\Delta w$更新，而A版本则是在net的update中直接进行`diff`的add操作，操作内容似乎不同。B版本中是在solver的ApplyUpdate中调用net的update，A版本的solver中并没有用到该update，似乎都是通过UpdatePSTable和SyncWithPSTable来进行的。因此**先保持现状暂时不做任何修改**
 
