@@ -11,8 +11,8 @@ namespace caffe {
 template <typename Dtype>
 BaseDataLayer<Dtype>::BaseDataLayer(const LayerParameter& param)
     : Layer<Dtype>(param),
-      transform_param_(param.transform_param()) {
-}
+      transform_param_(param.transform_param()),
+	  data_transformer_(transform_param_){ }
 //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入。
 template <typename Dtype>
 void BaseDataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
