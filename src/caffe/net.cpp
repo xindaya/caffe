@@ -833,7 +833,7 @@ template <typename Dtype>
 int Net<Dtype>::PseudoAppendBottom(const NetParameter& param, const int layer_id, 
     const int bottom_id, set<string>* available_blobs, 
     map<string, int>* blob_name_to_idx) {
-  const LayerParameter& layer_param = param.layers(layer_id);
+  const LayerParameter& layer_param = param.layer(layer_id);
   const string& blob_name = layer_param.bottom(bottom_id);
   if (available_blobs->find(blob_name) == available_blobs->end()) {
     LOG(FATAL) << "Unknown blob input " << blob_name
