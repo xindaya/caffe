@@ -5,12 +5,12 @@
 #include "caffe/data_layers.hpp"
 #include "caffe/layer.hpp"
 #include "caffe/util/io.hpp"
-
+//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 namespace caffe {
-
+//未做核心修改，按照bosen下定义DataLayerSetUp()函数的参数定义方式定义DataLayerSetUp()函数参数列表
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-     const vector<Blob<Dtype>*>& top) {
+     const vector<Blob<Dtype>*>& top, const bool init_ps) {
   batch_size_ = this->layer_param_.memory_data_param().batch_size();
   channels_ = this->layer_param_.memory_data_param().channels();
   height_ = this->layer_param_.memory_data_param().height();

@@ -7,12 +7,14 @@
 #include "caffe/vision_layers.hpp"
 
 namespace caffe {
-
+////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
   CHECK_EQ(4, bottom[0]->num_axes()) << "Input must have 4 axes, "
       << "corresponding to (num, channels, height, width)";
+	  string name = this->layer_param_.name();
   // Configure the kernel size, padding, stride, and inputs.
   ConvolutionParameter conv_param = this->layer_param_.convolution_param();
   CHECK(!conv_param.has_kernel_size() !=
@@ -77,23 +79,58 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   } else {
     if (bias_term_) {
       this->blobs_.resize(2);
+	  //bosen新加内容，为每一个blob创建一个全局table
+	  if (init_ps) {
+        this->blob_global_id_.resize(2);
+        (*layer_name_to_blob_global_idx)[name] = vector<int>(2);
+	  }
     } else {
       this->blobs_.resize(1);
+	  //bosen新加内容，为每一个blob创建一个全局table
+	  if (init_ps) {
+        this->blob_global_id_.resize(1);
+        (*layer_name_to_blob_global_idx)[name] = vector<int>(1);
+      }
     }
     // Initialize and fill the weights:
     // output channels x input channels per-group x kernel height x kernel width
-    this->blobs_[0].reset(new Blob<Dtype>(
-        conv_out_channels_, conv_in_channels_ / group_, kernel_h_, kernel_w_));
-    shared_ptr<Filler<Dtype> > weight_filler(GetFiller<Dtype>(
-        this->layer_param_.convolution_param().weight_filler()));
-    weight_filler->Fill(this->blobs_[0].get());
+    //bosen新加内容，定义weight_table的table_id
+	int weight_table_id = (init_ps ? *num_tables : -1);
+	//bosen下的reset函数的实现与原生caffe的reset函数实现不同，在输入参数上不相同
+	this->blobs_[0].reset(new Blob<Dtype>(
+        conv_out_channels_, conv_in_channels_ / group_, kernel_h_, kernel_w_,
+		BlobProto_BlobMode_GLOBAL, weight_table_id));
+	//bosen新加内容，生成layer_name_to_blob_global_idx变量
+	if (init_ps) {
+      // Create the weight table
+      this->blobs_[0]->CreatePSTable();
+      this->blob_global_id_[0] = weight_table_id;
+      (*layer_name_to_blob_global_idx)[name][0] = weight_table_id;
+      ++(*num_tables);
+    }
+    //在bosen中weight的初始化并不在layersetup中，而在solver中的InitTrainNet中做了统一初始化
+	//shared_ptr<Filler<Dtype> > weight_filler(GetFiller<Dtype>(
+        //this->layer_param_.convolution_param().weight_filler()));
+   // weight_filler->Fill(this->blobs_[0].get());
     // If necessary, initialize and fill the biases.
     if (bias_term_) {
-      vector<int> bias_shape(1, num_output_);
-      this->blobs_[1].reset(new Blob<Dtype>(bias_shape));
-      shared_ptr<Filler<Dtype> > bias_filler(GetFiller<Dtype>(
-          this->layer_param_.convolution_param().bias_filler()));
-      bias_filler->Fill(this->blobs_[1].get());
+     //bosen新加，定义bias_table的id
+	 int bias_table_id = (init_ps ? *num_tables : -1);
+	 // vector<int> bias_shape(1, num_output_);
+	 //采用bosen下的reset函数定义方式
+      this->blobs_[1].reset(new Blob<Dtype>(1, 1, 1, num_output_, 
+          BlobProto_BlobMode_GLOBAL, bias_table_id));
+     //在bosen中bias的初始化并不在layersetup中，而在solver中的InitTrainNet中做了统一初始化
+	 // shared_ptr<Filler<Dtype> > bias_filler(GetFiller<Dtype>(
+          //this->layer_param_.convolution_param().bias_filler()));
+      //bias_filler->Fill(this->blobs_[1].get());
+	   if (init_ps) {   
+		// Create the bias table
+        this->blobs_[1]->CreatePSTable();
+        this->blob_global_id_[1] = bias_table_id;
+        (*layer_name_to_blob_global_idx)[name][1] = bias_table_id;
+        ++(*num_tables);
+      }
     }
   }
   // Propagate gradients to the parameters (as directed by backward pass).
@@ -155,6 +192,7 @@ void BaseConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   }
 }
 
+//将caffe-rc中的一些功能集成为函数
 template <typename Dtype>
 void BaseConvolutionLayer<Dtype>::forward_cpu_gemm(const Dtype* input,
     const Dtype* weights, Dtype* output, bool skip_im2col) {

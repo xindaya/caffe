@@ -1,7 +1,9 @@
 #include <vector>
 
 #include "caffe/data_layers.hpp"
+#include <petuum_ps_common/include/petuum_ps.hpp>//bosen新加内容
 
+////整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 namespace caffe {
 
 template <typename Dtype>
