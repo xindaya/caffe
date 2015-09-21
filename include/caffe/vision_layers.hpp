@@ -13,7 +13,6 @@
 #include "caffe/loss_layers.hpp"
 #include "caffe/neuron_layers.hpp"
 #include "caffe/proto/caffe.pb.h"
-
 namespace caffe {
 
 /**
@@ -25,8 +24,11 @@ class BaseConvolutionLayer : public Layer<Dtype> {
  public:
   explicit BaseConvolutionLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+ ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -231,8 +233,11 @@ class CuDNNConvolutionLayer : public ConvolutionLayer<Dtype> {
  public:
   explicit CuDNNConvolutionLayer(const LayerParameter& param)
       : ConvolutionLayer<Dtype>(param), handles_setup_(false) {}
+ ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual ~CuDNNConvolutionLayer();
@@ -268,8 +273,11 @@ class Im2colLayer : public Layer<Dtype> {
  public:
   explicit Im2colLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -308,8 +316,11 @@ class LRNLayer : public Layer<Dtype> {
  public:
   explicit LRNLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -384,8 +395,11 @@ class PoolingLayer : public Layer<Dtype> {
  public:
   explicit PoolingLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -430,8 +444,11 @@ class CuDNNPoolingLayer : public PoolingLayer<Dtype> {
  public:
   explicit CuDNNPoolingLayer(const LayerParameter& param)
       : PoolingLayer<Dtype>(param), handles_setup_(false) {}
+  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual ~CuDNNPoolingLayer();
@@ -464,8 +481,11 @@ class SPPLayer : public Layer<Dtype> {
  public:
   explicit SPPLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 

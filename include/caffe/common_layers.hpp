@@ -25,6 +25,7 @@ namespace caffe {
  *
  * NOTE: does not implement Backwards operation.
  */
+ ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 class ArgMaxLayer : public Layer<Dtype> {
  public:
@@ -39,7 +40,9 @@ class ArgMaxLayer : public Layer<Dtype> {
   explicit ArgMaxLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -74,13 +77,16 @@ class ArgMaxLayer : public Layer<Dtype> {
  * @brief Takes at least two Blob%s and concatenates them along either the num
  *        or channel dimension, outputting the result.
  */
+ ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 class ConcatLayer : public Layer<Dtype> {
  public:
   explicit ConcatLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -149,13 +155,16 @@ class ConcatLayer : public Layer<Dtype> {
  *
  * TODO(dox): thorough documentation for Forward, Backward, and proto params.
  */
+ ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 class EltwiseLayer : public Layer<Dtype> {
  public:
   explicit EltwiseLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -334,13 +343,16 @@ class FlattenLayer : public Layer<Dtype> {
  *
  * TODO(dox): thorough documentation for Forward, Backward, and proto params.
  */
+ ////按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 class InnerProductLayer : public Layer<Dtype> {
  public:
   explicit InnerProductLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -357,6 +369,10 @@ class InnerProductLayer : public Layer<Dtype> {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
   virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+//bosen新加内容，从sv_cpu和sv_gpu中计算梯度
+  // SVB
+  virtual void ComputeGradientFromSV_cpu(const SufficientVector* v);
+  virtual void ComputeGradientFromSV_gpu(const SufficientVector* v);
 
   int M_;
   int K_;
@@ -547,6 +563,7 @@ class SoftmaxLayer : public Layer<Dtype> {
   Blob<Dtype> scale_;
 };
 
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 #ifdef USE_CUDNN
 /**
  * @brief cuDNN implementation of SoftmaxLayer.
@@ -558,7 +575,9 @@ class CuDNNSoftmaxLayer : public SoftmaxLayer<Dtype> {
   explicit CuDNNSoftmaxLayer(const LayerParameter& param)
       : SoftmaxLayer<Dtype>(param), handles_setup_(false) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual ~CuDNNSoftmaxLayer();
@@ -607,6 +626,7 @@ class SplitLayer : public Layer<Dtype> {
   int count_;
 };
 
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 /**
  * @brief Takes a Blob and slices it along either the num or channel dimension,
  *        outputting multiple sliced Blob results.
@@ -619,7 +639,9 @@ class SliceLayer : public Layer<Dtype> {
   explicit SliceLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
