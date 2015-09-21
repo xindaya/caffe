@@ -11,8 +11,7 @@ namespace caffe {
 
 // Make sure each thread can have different values.
 static boost::thread_specific_ptr<Caffe> thread_instance_;
-// -----------------------------NOTIfication part------------------------------- 
-// Caffe in Bosen returns singleton_, we don't modify this Get() function temporarily
+
 Caffe& Caffe::Get() {
   if (!thread_instance_.get()) {
     thread_instance_.reset(new Caffe());
@@ -51,12 +50,11 @@ void GlobalInit(int* pargc, char*** pargv) {
 }
 
 #ifdef CPU_ONLY  // CPU-only Caffe.
-// -----------------------------modification part-------------------------------
-// ADD input variable phases_(NULL)
+
 Caffe::Caffe()
     : random_generator_(), mode_(Caffe::CPU),
-      solver_count_(1), root_solver_(true), phases_(NULL) { }
-// -----------------------------modification part end-------------------------------
+      solver_count_(1), root_solver_(true) { }
+
 Caffe::~Caffe() { }
 
 void Caffe::set_random_seed(const unsigned int seed) {
@@ -96,11 +94,10 @@ void* Caffe::RNG::generator() {
 }
 
 #else  // Normal GPU + CPU Caffe.
-// -----------------------------modification part-------------------------------
-// ADD input variable phases_(NULL)
+
 Caffe::Caffe()
     : cublas_handle_(NULL), curand_generator_(NULL), random_generator_(),
-    mode_(Caffe::CPU), solver_count_(1), root_solver_(true), phases_(NULL) {
+    mode_(Caffe::CPU), solver_count_(1), root_solver_(true) {
   // Try to create a cublas handler, and report an error if failed (but we will
   // keep the program running as one might just want to run CPU code).
   if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
@@ -114,7 +111,7 @@ Caffe::Caffe()
     LOG(ERROR) << "Cannot create Curand generator. Curand won't be available.";
   }
 }
-// -----------------------------modification part end-------------------------------
+
 Caffe::~Caffe() {
   if (cublas_handle_) CUBLAS_CHECK(cublasDestroy(cublas_handle_));
   if (curand_generator_) {
