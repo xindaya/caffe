@@ -3,7 +3,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/neuron_layers.hpp"
 #include "caffe/util/math_functions.hpp"
-
+//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 namespace caffe {
 //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
