@@ -113,6 +113,9 @@ class Caffe {
   static Caffe& Get();
 
   enum Brew { CPU, GPU };
+// -----------------------------modification part------------------------------- 
+  enum Phase { TRAIN, TEST };
+// -----------------------------modification part end------------------------------- 
 
   // This random number generator facade hides boost and CUDA rng
   // implementation from one another (for cross-platform compatibility).
@@ -144,12 +147,32 @@ class Caffe {
 
   // Returns the mode: running on CPU or GPU.
   inline static Brew mode() { return Get().mode_; }
+// -----------------------------modification part-------------------------------
+  // Returns the phase: TRAIN or TEST.
+  inline static Phase phase(const int thread_id) { 
+    CHECK(Get().phases_ != NULL);
+    return Get().phases_[thread_id]; 
+  }
+// -----------------------------modification part end-------------------------------
   // The setters for the variables
   // Sets the mode. It is recommended that you don't change the mode halfway
   // into the program since that may cause allocation of pinned memory being
   // freed in a non-pinned way, which may cause problems - I haven't verified
   // it personally but better to note it here in the header file.
   inline static void set_mode(Brew mode) { Get().mode_ = mode; }
+// -----------------------------modification part-------------------------------
+  inline static void initialize_phases(const int num_threads) { 
+    Get().phases_ = new Phase[num_threads]; 
+    for (int tidx = 0; tidx < num_threads; ++tidx) {
+      set_phase(Caffe::TRAIN, tidx);
+    }
+  }
+  // Sets the phase.
+  inline static void set_phase(Phase phase, const int thread_id) {
+    CHECK(Get().phases_ != NULL);
+    Get().phases_[thread_id] = phase; 
+  }
+// -----------------------------modification part end-------------------------------
   // Sets the random seed of both boost and curand
   static void set_random_seed(const unsigned int seed);
   // Sets the device. Since we have cublas and curand stuff, set device also
@@ -171,6 +194,10 @@ class Caffe {
   shared_ptr<RNG> random_generator_;
 
   Brew mode_;
+// -----------------------------modification part-------------------------------
+  Phase* phases_;
+  static shared_ptr<Caffe> singleton_;
+// -----------------------------modification part end-------------------------------
   int solver_count_;
   bool root_solver_;
 
