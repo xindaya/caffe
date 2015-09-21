@@ -515,10 +515,11 @@ Filler<Dtype>* GetFiller(const FillerParameter& param) {
     return new UniformFiller<Dtype>(param);
   } else if (type == "xavier") {
     return new XavierFiller<Dtype>(param);
-  } else if (type == "msra") {
-    return new MSRAFiller<Dtype>(param);
-  } else if (type == "bilinear") {
-    return new BilinearFiller<Dtype>(param);
+ //暂不实现MSRAFiller和BilinearFiller
+ // } else if (type == "msra") {
+ //   return new MSRAFiller<Dtype>(param);
+ // } else if (type == "bilinear") {
+ //   return new BilinearFiller<Dtype>(param);
   } else {
     CHECK(false) << "Unknown filler name: " << param.type();
   }
