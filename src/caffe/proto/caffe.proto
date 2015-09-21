@@ -103,7 +103,7 @@ message NetParameter {
   optional bool debug_info = 7 [default = false];
   
   //bosen新加内容
-  repeated LayerParameter layers_bosen = 9; // a bunch of layers.
+  //repeated LayerParameter layers_bosen = 9; // a bunch of layers.
  
   // The shape of the input blobs.
   repeated BlobShape input_shape = 8;
