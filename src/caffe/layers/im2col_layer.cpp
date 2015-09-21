@@ -4,12 +4,13 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/im2col.hpp"
 #include "caffe/vision_layers.hpp"
-
+//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 namespace caffe {
 
 template <typename Dtype>
 void Im2colLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
   ConvolutionParameter conv_param = this->layer_param_.convolution_param();
   CHECK(!conv_param.has_kernel_size() !=
       !(conv_param.has_kernel_h() && conv_param.has_kernel_w()))

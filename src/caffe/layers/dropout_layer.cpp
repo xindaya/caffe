@@ -7,13 +7,15 @@
 #include "caffe/syncedmem.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 namespace caffe {
 
 template <typename Dtype>
 void DropoutLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
-  NeuronLayer<Dtype>::LayerSetUp(bottom, top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
+  NeuronLayer<Dtype>::LayerSetUp(bottom, top, init_ps, num_tables, 
+      layer_name_to_blob_global_idx);
   threshold_ = this->layer_param_.dropout_param().dropout_ratio();
   DCHECK(threshold_ > 0.);
   DCHECK(threshold_ < 1.);
@@ -37,6 +39,7 @@ void DropoutLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   Dtype* top_data = top[0]->mutable_cpu_data();
   unsigned int* mask = rand_vec_.mutable_cpu_data();
   const int count = bottom[0]->count();
+  //bosen下phase里有thread_id参数，此处未做修改
   if (this->phase_ == TRAIN) {
     // Create random numbers
     caffe_rng_bernoulli(count, 1. - threshold_, mask);

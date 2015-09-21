@@ -5,12 +5,13 @@
 
 #include "caffe/layer.hpp"
 #include "caffe/vision_layers.hpp"
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 namespace caffe {
 
 template <typename Dtype>
 void ArgMaxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top,const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
   out_max_val_ = this->layer_param_.argmax_param().out_max_val();
   top_k_ = this->layer_param_.argmax_param().top_k();
   CHECK_GE(top_k_, 1) << " top k must not be less than 1.";

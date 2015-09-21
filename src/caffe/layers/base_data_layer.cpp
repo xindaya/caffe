@@ -13,10 +13,13 @@ BaseDataLayer<Dtype>::BaseDataLayer(const LayerParameter& param)
     : Layer<Dtype>(param),
       transform_param_(param.transform_param()) {
 }
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入。
 template <typename Dtype>
 void BaseDataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
+     map<string, vector<int> >* layer_name_to_blob_global_idx) {
+ //bosen新加内容
+ data_transformer_.set_phase(Caffe::phase(this->thread_id_));
   if (top.size() == 1) {
     output_labels_ = false;
   } else {
@@ -26,7 +29,8 @@ void BaseDataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       new DataTransformer<Dtype>(transform_param_, this->phase_));
   data_transformer_->InitRand();
   // The subclasses should setup the size of bottom and top
-  DataLayerSetUp(bottom, top);
+  //bosen下的DataLayerSet()函数与原生caffe的不同，增加了init_ps参数
+  DataLayerSetUp(bottom, top, init_ps);
 }
 
 template <typename Dtype>
@@ -41,12 +45,18 @@ BasePrefetchingDataLayer<Dtype>::BasePrefetchingDataLayer(
 
 template <typename Dtype>
 void BasePrefetchingDataLayer<Dtype>::LayerSetUp(
-    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  BaseDataLayer<Dtype>::LayerSetUp(bottom, top);
+    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top,
+	bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
+  BaseDataLayer<Dtype>::LayerSetUp(bottom, top, init_ps, num_tables, 
+      layer_name_to_blob_global_idx);
+ //bosen在实现prefetch thread之前增加了条件语句 if (!init_ps)
+  if (!init_ps) {
   // Before starting the prefetch thread, we make cpu_data and gpu_data
   // calls so that the prefetch thread does not accidentally make simultaneous
   // cudaMalloc calls when the main thread is running. In some GPUs this
   // seems to cause failures if we do not so.
+  
   for (int i = 0; i < PREFETCH_COUNT; ++i) {
     prefetch_[i].data_.mutable_cpu_data();
     if (this->output_labels_) {
@@ -67,6 +77,7 @@ void BasePrefetchingDataLayer<Dtype>::LayerSetUp(
   this->data_transformer_->InitRand();
   StartInternalThread();
   DLOG(INFO) << "Prefetch initialized.";
+ }
 }
 
 template <typename Dtype>

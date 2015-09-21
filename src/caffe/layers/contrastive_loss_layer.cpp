@@ -8,10 +8,14 @@
 
 namespace caffe {
 
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 void ContrastiveLossLayer<Dtype>::LayerSetUp(
-  const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  LossLayer<Dtype>::LayerSetUp(bottom, top);
+  const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top,
+  const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
+  LossLayer<Dtype>::LayerSetUp(bottom, top,init_ps, num_tables,
+      layer_name_to_blob_global_idx);
   CHECK_EQ(bottom[0]->channels(), bottom[1]->channels());
   CHECK_EQ(bottom[0]->height(), 1);
   CHECK_EQ(bottom[0]->width(), 1);

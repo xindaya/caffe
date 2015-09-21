@@ -22,17 +22,17 @@
 // caffe.proto > LayerParameter > WindowDataParameter
 //   'source' field specifies the window_file
 //   'crop_size' indicates the desired warped size
-
+//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 namespace caffe {
 
 template <typename Dtype>
 WindowDataLayer<Dtype>::~WindowDataLayer<Dtype>() {
   this->StopInternalThread();
 }
-
+//按照bosen下定义的DataLayerSetUp输入参数形式重新定义DataLayerSetUp()函数的输入
 template <typename Dtype>
 void WindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top, const bool init_ps) {
   // LayerSetUp runs through the window_file and creates two structures
   // that hold windows: one for foreground (object) windows and one
   // for background (non-object) windows. We use an overlap threshold

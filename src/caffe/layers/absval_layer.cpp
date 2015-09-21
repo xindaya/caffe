@@ -5,11 +5,13 @@
 #include "caffe/util/math_functions.hpp"
 
 namespace caffe {
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 void AbsValLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
-  NeuronLayer<Dtype>::LayerSetUp(bottom, top);
+      const vector<Blob<Dtype>*>& top,const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
+  NeuronLayer<Dtype>::LayerSetUp(bottom, top,init_ps, num_tables, 
+      layer_name_to_blob_global_idx);
   CHECK_NE(top[0], bottom[0]) << this->type() << " Layer does not "
     "allow in-place computation.";
 }
@@ -26,6 +28,8 @@ template <typename Dtype>
 void AbsValLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
   const int count = top[0]->count();
+
+
   const Dtype* top_diff = top[0]->cpu_diff();
   if (propagate_down[0]) {
     const Dtype* bottom_data = bottom[0]->cpu_data();

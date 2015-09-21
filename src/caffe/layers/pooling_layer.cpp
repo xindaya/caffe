@@ -7,15 +7,16 @@
 #include "caffe/syncedmem.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
-
+//整个文件并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 namespace caffe {
 
 using std::min;
 using std::max;
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 void PoolingLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
   PoolingParameter pool_param = this->layer_param_.pooling_param();
   if (pool_param.global_pooling()) {
     CHECK(!(pool_param.has_kernel_size() ||

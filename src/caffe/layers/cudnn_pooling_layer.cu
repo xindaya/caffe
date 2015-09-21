@@ -6,6 +6,7 @@
 #include "caffe/util/im2col.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
+//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 
 namespace caffe {
 
