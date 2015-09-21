@@ -527,9 +527,9 @@ void Layer<Dtype>::SetUpBlobGlobalTable(
     const LayerParameter& param = this->layer_param_;
     const string& type = param.type();
     shared_ptr<Filler<Dtype> > weight_filler;
-    switch (type) {
+    switch (type[0]) {
     //case LayerParameter_LayerType_CONVOLUTION:
-    case "Convolution":
+    case 'C':
       // weight table
       weight_filler.reset(GetFiller<Dtype>(
           param.convolution_param().weight_filler()));
@@ -541,7 +541,7 @@ void Layer<Dtype>::SetUpBlobGlobalTable(
         weight_filler->FillPSTable(this->blobs_[1].get());
       } 
       break;
-    case "InnerProduct":
+    case 'I':
       // weight table
       weight_filler.reset(GetFiller<Dtype>(
           param.inner_product_param().weight_filler()));
