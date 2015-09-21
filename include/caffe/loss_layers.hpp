@@ -111,7 +111,7 @@ class LossLayer : public Layer<Dtype> {
      : Layer<Dtype>(param) {}
   virtual void LayerSetUp(
       const vector<Blob<Dtype>*>& bottom, 
-	  const vector<Blob<Dtype>*>& top const bool init_ps = false, 
+	  const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
       int* num_tables = NULL,
       map<string, vector<int> >* layer_name_to_blob_global_idx = NULL );
   
