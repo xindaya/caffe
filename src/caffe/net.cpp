@@ -467,7 +467,8 @@ const int Net<Dtype>::InitPS(const NetParameter& in_param,
            "the number of the layer's parameter blobs: " << num_param_blobs;
 
     // use SVB for inner_product layers
-    if (layer_param.type() == LayerParameter_LayerType_INNER_PRODUCT) {
+    //if (layer_param.type() == LayerParameter_LayerType_INNER_PRODUCT) {
+    if (strcmp(layer_param.type(),"InnerProduct") {
       ++num_ip_layers;
     }
   }
