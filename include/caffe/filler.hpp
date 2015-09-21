@@ -1,17 +1,22 @@
 // Fillers are random number generators that fills a blob using the specified
 // algorithm. The expectation is that they are only going to be used during
 // initialization time and will not involve any GPUs.
+//目前未实现MSRAFiller和BilinearFiller功能，待开发
 
 #ifndef CAFFE_FILLER_HPP
 #define CAFFE_FILLER_HPP
 
 #include <string>
+//bosen新加
+#include <petuum_ps_common/include/petuum_ps.hpp>
 
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/syncedmem.hpp"
 #include "caffe/util/math_functions.hpp"
+//bosen新加
+#include "caffe/context.hpp"
 
 namespace caffe {
 
@@ -22,6 +27,8 @@ class Filler {
   explicit Filler(const FillerParameter& param) : filler_param_(param) {}
   virtual ~Filler() {}
   virtual void Fill(Blob<Dtype>* blob) = 0;
+  //bosen新加
+  virtual void FillPSTable(Blob<Dtype>* blob) = 0;
  protected:
   FillerParameter filler_param_;
 };  // class Filler
@@ -44,6 +51,37 @@ class ConstantFiller : public Filler<Dtype> {
     CHECK_EQ(this->filler_param_.sparse(), -1)
          << "Sparsity not supported by this Filler.";
   }
+//bosen新加内容FillPSTable
+//virtual void FillPSTable(Blob<Dtype>* blob) {
+  //  const int count = blob->count();
+  //  const Dtype value = this->filler_param_.value();
+  //  CHECK(count);
+  //  petuum::UpdateBatch<Dtype> update_batch(count);
+  //  for (int i = 0; i < count; ++i) {
+  //    update_batch.UpdateSet(i, i, value);
+  //  }
+  //  blob->table()->BatchInc(1, update_batch);
+  //  CHECK_EQ(this->filler_param_.sparse(), -1)
+  //       << "Sparsity not supported by this Filler.";
+  //}
+  virtual void FillPSTable(Blob<Dtype>* blob) {
+    const int count = blob->count();
+    const int global_table_row_capacity = blob->global_table_row_capacity();
+    const Dtype value = this->filler_param_.value();
+    int update_idx = 0;
+    for (int r = 0; r < util::Context::num_rows_per_table(); ++r) {
+      petuum::UpdateBatch<Dtype> update_batch(global_table_row_capacity);
+      for (int i = 0; i < global_table_row_capacity; ++i) {
+        update_batch.UpdateSet(i, i, value);
+        ++update_idx;
+        if (update_idx >= count) { break; }
+      }
+      blob->table()->BatchInc(r, update_batch);
+      if (update_idx >= count) { break; }
+    }
+    CHECK_EQ(this->filler_param_.sparse(), -1)
+         << "Sparsity not supported by this Filler.";
+  }
 };
 
 /// @brief Fills a Blob with uniformly distributed values @f$ x\sim U(a, b) @f$.
@@ -59,6 +97,46 @@ class UniformFiller : public Filler<Dtype> {
     CHECK_EQ(this->filler_param_.sparse(), -1)
          << "Sparsity not supported by this Filler.";
   }
+//bosen新加内容
+ //virtual void FillPSTable(Blob<Dtype>* blob) {
+  //  const int count = blob->count();
+  //  CHECK(count);
+  //  Dtype* rn = new Dtype[count];
+  //  caffe_rng_uniform<Dtype>(count, Dtype(this->filler_param_.min()),
+  //      Dtype(this->filler_param_.max()), rn);
+  //  petuum::UpdateBatch<Dtype> update_batch(count);
+  //  for (int i = 0; i < count; ++i) {
+  //    update_batch.UpdateSet(i, i, rn[i]);
+  //  }
+  //  blob->table()->BatchInc(1, update_batch);
+  //  delete rn;
+
+  //  CHECK_EQ(this->filler_param_.sparse(), -1)
+  //       << "Sparsity not supported by this Filler.";
+  //}
+  virtual void FillPSTable(Blob<Dtype>* blob) {
+    const int count = blob->count();
+    const int global_table_row_capacity = blob->global_table_row_capacity();
+    Dtype* rn = new Dtype[count];
+    caffe_rng_uniform<Dtype>(count, Dtype(this->filler_param_.min()),
+        Dtype(this->filler_param_.max()), rn);
+
+    int update_idx = 0;
+    for (int r = 0; r < util::Context::num_rows_per_table(); ++r) {
+      petuum::UpdateBatch<Dtype> update_batch(global_table_row_capacity);
+      for (int i = 0; i < global_table_row_capacity; ++i) {
+        update_batch.UpdateSet(i, i, rn[update_idx]);
+        ++update_idx;
+        if (update_idx >= count) { break; }
+      }
+      blob->table()->BatchInc(r, update_batch);
+      if (update_idx >= count) { break; }
+    }
+
+    delete rn;
+    CHECK_EQ(this->filler_param_.sparse(), -1)
+         << "Sparsity not supported by this Filler.";
+  }
 };
 
 /// @brief Fills a Blob with Gaussian-distributed values @f$ x = a @f$.
@@ -68,10 +146,49 @@ class GaussianFiller : public Filler<Dtype> {
   explicit GaussianFiller(const FillerParameter& param)
       : Filler<Dtype>(param) {}
   virtual void Fill(Blob<Dtype>* blob) {
-    Dtype* data = blob->mutable_cpu_data();
+      GenerateSparseGaussianRN(blob, blob->mutable_cpu_data());//bosen将生成稀疏高斯RN的功能集成为函数
+  }
+  //bosen新加内容
+  //virtual void FillPSTable(Blob<Dtype>* blob) {
+  //  const int count = blob->count();
+  //  CHECK(count);
+  //  Dtype* rn = new Dtype[count];
+  //  GenerateSparseGaussianRN(blob, rn);
+  //  petuum::UpdateBatch<Dtype> update_batch(count);
+  //  for (int i = 0; i < count; ++i) {
+  //    update_batch.UpdateSet(i, i, rn[i]);
+  //  }
+  //  blob->table()->BatchInc(1, update_batch);
+  //  delete rn;
+  //}
+  virtual void FillPSTable(Blob<Dtype>* blob) {
+    const int count = blob->count();
+    const int global_table_row_capacity = blob->global_table_row_capacity();
+    Dtype* rn = new Dtype[count];
+    GenerateSparseGaussianRN(blob, rn);
+
+    int update_idx = 0;
+    for (int r = 0; r < util::Context::num_rows_per_table(); ++r) {
+      petuum::UpdateBatch<Dtype> update_batch(global_table_row_capacity);
+      for (int i = 0; i < global_table_row_capacity; ++i) {
+        update_batch.UpdateSet(i, i, rn[update_idx]);
+        ++update_idx;
+        if (update_idx >= count) { break; }
+      }
+      blob->table()->BatchInc(r, update_batch);
+      if (update_idx >= count) { break; }
+    }
+
+    delete rn;
+  }
+    //原生caffe里的东西，在此处注释之
+	//Dtype* data = blob->mutable_cpu_data();
+protected:
+//bosen将功能用函数GenerateSparseGaussianRN集成
+  void GenerateSparseGaussianRN(Blob<Dtype>* blob, Dtype* rn) {
     CHECK(blob->count());
     caffe_rng_gaussian<Dtype>(blob->count(), Dtype(this->filler_param_.mean()),
-        Dtype(this->filler_param_.std()), blob->mutable_cpu_data());
+        Dtype(this->filler_param_.std()), rn);
     int sparse = this->filler_param_.sparse();
     CHECK_GE(sparse, -1);
     if (sparse >= 0) {
@@ -86,12 +203,12 @@ class GaussianFiller : public Filler<Dtype> {
       int* mask = reinterpret_cast<int*>(rand_vec_->mutable_cpu_data());
       caffe_rng_bernoulli(blob->count(), non_zero_probability, mask);
       for (int i = 0; i < blob->count(); ++i) {
-        data[i] *= mask[i];
+        rn[i] *= mask[i];
       }
     }
   }
 
- protected:
+ //protected:
   shared_ptr<SyncedMemory> rand_vec_;
 };
 
@@ -104,9 +221,56 @@ class PositiveUnitballFiller : public Filler<Dtype> {
   explicit PositiveUnitballFiller(const FillerParameter& param)
       : Filler<Dtype>(param) {}
   virtual void Fill(Blob<Dtype>* blob) {
-    Dtype* data = blob->mutable_cpu_data();
+    GeneratePositiveUnitballRN(blob, blob->mutable_cpu_data());////bosen将生成RN的功能集成为函数
+
+    CHECK_EQ(this->filler_param_.sparse(), -1)
+         << "Sparsity not supported by this Filler.";
+  }
+
+//bosen新加内容
+//virtual void FillPSTable(Blob<Dtype>* blob) {
+  //  const int count = blob->count();
+  //  DCHECK(count);
+  //  Dtype* rn = new Dtype[count];
+  //  GeneratePositiveUnitballRN(blob, rn);
+  //  petuum::UpdateBatch<Dtype> update_batch(count);
+  //  for (int i = 0; i < count; ++i) {
+  //    update_batch.UpdateSet(i, i, rn[i]);
+  //  }
+  //  blob->table()->BatchInc(1, update_batch);
+  //  delete rn;
+
+  //  CHECK_EQ(this->filler_param_.sparse(), -1)
+  //       << "Sparsity not supported by this Filler.";
+  //}
+  virtual void FillPSTable(Blob<Dtype>* blob) {
+    const int count = blob->count();
+    const int global_table_row_capacity = blob->global_table_row_capacity();
+    Dtype* rn = new Dtype[count];
+    GeneratePositiveUnitballRN(blob, rn);
+
+    int update_idx = 0;
+    for (int r = 0; r < util::Context::num_rows_per_table(); ++r) {
+      petuum::UpdateBatch<Dtype> update_batch(global_table_row_capacity);
+      for (int i = 0; i < global_table_row_capacity; ++i) {
+        update_batch.UpdateSet(i, i, rn[update_idx]);
+        ++update_idx;
+        if (update_idx >= count) { break; }
+      }
+      blob->table()->BatchInc(r, update_batch);
+      if (update_idx >= count) { break; }
+    }
+
+    delete rn;
+    CHECK_EQ(this->filler_param_.sparse(), -1)
+         << "Sparsity not supported by this Filler.";
+  }
+    //原生caffe里的东西，在此处注释之
+	//Dtype* data = blob->mutable_cpu_data();
+	protected:
+  void GeneratePositiveUnitballRN(Blob<Dtype>* blob, Dtype* rn) {
     DCHECK(blob->count());
-    caffe_rng_uniform<Dtype>(blob->count(), 0, 1, blob->mutable_cpu_data());
+    caffe_rng_uniform<Dtype>(blob->count(), 0, 1, rn);
     // We expect the filler to not be called very frequently, so we will
     // just use a simple implementation
     int dim = blob->count() / blob->num();
@@ -114,14 +278,15 @@ class PositiveUnitballFiller : public Filler<Dtype> {
     for (int i = 0; i < blob->num(); ++i) {
       Dtype sum = 0;
       for (int j = 0; j < dim; ++j) {
-        sum += data[i * dim + j];
+        sum += rn[i * dim + j];
       }
       for (int j = 0; j < dim; ++j) {
-        data[i * dim + j] /= sum;
+        rn[i * dim + j] /= sum;
       }
     }
-    CHECK_EQ(this->filler_param_.sparse(), -1)
-         << "Sparsity not supported by this Filler.";
+    //bosen将该判断语句放在了最前面
+	//CHECK_EQ(this->filler_param_.sparse(), -1)
+        // << "Sparsity not supported by this Filler.";
   }
 };
 
@@ -161,6 +326,75 @@ class XavierFiller : public Filler<Dtype> {
     Dtype scale = sqrt(Dtype(3) / n);
     caffe_rng_uniform<Dtype>(blob->count(), -scale, scale,
         blob->mutable_cpu_data());
+    CHECK_EQ(this->filler_param_.sparse(), -1)
+         << "Sparsity not supported by this Filler.";
+  }
+  
+  //bosen新加内容
+  //virtual void FillPSTable(Blob<Dtype>* blob) {
+  //  const int count = blob->count();
+  //  CHECK(count);
+  //  int fan_in = blob->count() / blob->num();
+  //  Dtype scale = sqrt(Dtype(3) / fan_in);
+  //  Dtype* rn = new Dtype[count];
+  //  caffe_rng_uniform<Dtype>(blob->count(), -scale, scale, rn);
+  //  petuum::UpdateBatch<Dtype> update_batch(count);
+  //  for (int i = 0; i < count; ++i) {
+  //    update_batch.UpdateSet(i, i, rn[i]);
+  //  }
+  //  blob->table()->BatchInc(1, update_batch);
+  //  delete rn;
+
+  //  CHECK_EQ(this->filler_param_.sparse(), -1)
+  //       << "Sparsity not supported by this Filler.";
+  //}
+  virtual void FillPSTable(Blob<Dtype>* blob) {
+    const int count = blob->count();
+    const int global_table_row_capacity = blob->global_table_row_capacity();
+    int fan_in = blob->count() / blob->num();
+	int fan_out = blob->count() / blob->channels();
+    Dtype n = fan_in;  // default to fan_in
+    if (this->filler_param_.variance_norm() ==
+        FillerParameter_VarianceNorm_AVERAGE) {
+      n = (fan_in + fan_out) / Dtype(2);
+    } else if (this->filler_param_.variance_norm() ==
+        FillerParameter_VarianceNorm_FAN_OUT) {
+      n = fan_out;
+    }
+    Dtype scale = sqrt(Dtype(3) / n);
+    Dtype* rn = new Dtype[count];
+    caffe_rng_uniform<Dtype>(blob->count(), -scale, scale, rn);
+
+    int update_idx = 0;
+    for (int r = 0; r < util::Context::num_rows_per_table(); ++r) {
+      petuum::UpdateBatch<Dtype> update_batch(global_table_row_capacity);
+      for (int i = 0; i < global_table_row_capacity; ++i) {
+        update_batch.UpdateSet(i, i, rn[update_idx]);
+        ++update_idx;
+        if (update_idx >= count) { break; }
+      }
+      //LOG(INFO) << "test get " << r;
+      //petuum::RowAccessor row_acc;
+      //blob->table()->template Get<petuum::DenseRow<Dtype> >(
+      //  r, &row_acc, 0);
+      //LOG(INFO) << "batch inc " << r;
+      blob->table()->BatchInc(r, update_batch);
+      //LOG(INFO) << "batch inc done " << r;
+      if (update_idx >= count) { break; }
+    }
+    //
+    //for (int r = 0; r < util::Context::num_rows_per_table(); ++r) {
+    //  petuum::DenseUpdateBatch<Dtype> update_batch(0, global_table_row_capacity);
+    //  for (int i = 0; i < global_table_row_capacity; ++i) {
+    //    update_batch[i] = rn[update_idx];
+    //    ++update_idx;
+    //    if (update_idx >= count) { break; }
+    //  }
+    //  blob->table()->DenseBatchInc(r, update_batch);
+    //  if (update_idx >= count) { break; }
+    //}
+
+    delete rn;
     CHECK_EQ(this->filler_param_.sparse(), -1)
          << "Sparsity not supported by this Filler.";
   }
