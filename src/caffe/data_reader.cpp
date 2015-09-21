@@ -10,14 +10,18 @@
 
 namespace caffe {
 
+// 我知道java的弱引用,这个应该是类似的功能和效果
 using boost::weak_ptr;
 
 map<const string, weak_ptr<DataReader::Body> > DataReader::bodies_;
+// 锁都是为了多线程用的,看来下面有多线程的东西,预警
 static boost::mutex bodies_mutex_;
 
 DataReader::DataReader(const LayerParameter& param)
     : queue_pair_(new QueuePair(  //
         param.data_param().prefetch() * param.data_param().batch_size())) {
+  // 根据预取数据的大小和batchsize设置blockingqueue的容量
+
   // Get or create a body
   boost::mutex::scoped_lock lock(bodies_mutex_);
   string key = source_key(param);
@@ -70,17 +74,24 @@ DataReader::Body::~Body() {
   StopInternalThread();
 }
 
+// 这个是线程的入口函数
 void DataReader::Body::InternalThreadEntry() {
+  // 获取db的名字
   shared_ptr<db::DB> db(db::GetDB(param_.data_param().backend()));
+  // 以只读方式打开数据库
   db->Open(param_.data_param().source(), db::READ);
+  // 打开游标
   shared_ptr<db::Cursor> cursor(db->NewCursor());
+  // 将queuepair用vector存放
+  // 一个solver一个queuepair
   vector<shared_ptr<QueuePair> > qps;
   try {
     int solver_count = param_.phase() == TRAIN ? Caffe::solver_count() : 1;
 
     // To ensure deterministic runs, only start running once all solvers
     // are ready. But solvers need to peek on one item during initialization,
-    // so read one item, then wait for the next solver.
+    // so read one item, thn wait for the next solver.\
+    // 这个只在初始化的时候运行一遍
     for (int i = 0; i < solver_count; ++i) {
       shared_ptr<QueuePair> qp(new_queue_pairs_.pop());
       read_one(cursor.get(), qp.get());
@@ -88,6 +99,7 @@ void DataReader::Body::InternalThreadEntry() {
     }
     // Main loop
     while (!must_stop()) {
+      // 每个sovler顺序读数据
       for (int i = 0; i < solver_count; ++i) {
         read_one(cursor.get(), qps[i].get());
       }
@@ -106,9 +118,11 @@ void DataReader::Body::read_one(db::Cursor* cursor, QueuePair* qp) {
   Datum* datum = qp->free_.pop();
   // TODO deserialize in-place instead of copy?
   datum->ParseFromString(cursor->value());
+  // 从free中读一个,然后放到full里,这个是什么寓意
   qp->full_.push(datum);
 
   // go to the next iter
+  然后将游标放到下一个数据的位置上
   cursor->Next();
   if (!cursor->valid()) {
     DLOG(INFO) << "Restarting data prefetching from start.";

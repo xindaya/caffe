@@ -20,14 +20,31 @@ namespace caffe {
  * subset of the database. Data is distributed to solvers in a round-robin
  * way to keep parallel training deterministic.
  */
+
+/*
+ * 这个解释很详细
+ * 将数据从source中读出来,放到queue中
+ *
+ * 1. 单线程读取数据, 即使有多个solver在running
+ * 2. 这样可以保证数据读取的序列化
+ * 3. data 对于多个solver来说是分布式的, 因为有循环的队列, 来保证读取的确定性.
+ * */
+
 class DataReader {
  public:
   explicit DataReader(const LayerParameter& param);
   ~DataReader();
-
+/*
+ * 注意这个函数的目的是获取名字叫free的队列
+ * 不是free队列
+ * */
   inline BlockingQueue<Datum*>& free() const {
     return queue_pair_->free_;
   }
+
+/*
+ * 这个目的是获取full的名字队列
+ * */
   inline BlockingQueue<Datum*>& full() const {
     return queue_pair_->full_;
   }
@@ -35,6 +52,10 @@ class DataReader {
  protected:
   // Queue pairs are shared between a body and its readers
   class QueuePair {
+/*
+ * 从命名的方式来看, 这里用的技术是双buffer, 来避免io阻塞
+ * 具体双buffer是怎么做的,大家可以google一下,这个算是计算机程序设计中的一个trick
+ * */
    public:
     explicit QueuePair(int size);
     ~QueuePair();

@@ -44,6 +44,13 @@ message BlobProtoVector {
   repeated BlobProto blobs = 1;
 }
 
+// 对于image来说
+// channels 就是rgb
+// height 是这张image的height
+// width 就是这张image的width
+// data 就是 这个image 的pixel的展平
+// label 就是这个图像的label, image和label存储到了一个datum里
+// 特征向量存放在float_data 中
 message Datum {
   optional int32 channels = 1;
   optional int32 height = 2;

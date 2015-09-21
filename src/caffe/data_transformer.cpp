@@ -10,11 +10,20 @@
 
 namespace caffe {
 
+/*
+ * 这个类的构造函数
+ * 1. param
+ * 2. phase
+ * ---
+ * 1. param的目的是用来获取参数
+ * 2. phase自然是获取相应的phase
+ * */
 template<typename Dtype>
 DataTransformer<Dtype>::DataTransformer(const TransformationParameter& param,
     Phase phase)
     : param_(param), phase_(phase) {
   // check if we want to use mean_file
+  // 读取 mean file 将image 做图像平滑
   if (param_.has_mean_file()) {
     CHECK_EQ(param_.mean_value_size(), 0) <<
       "Cannot specify mean_file and mean_value at the same time";
@@ -22,11 +31,14 @@ DataTransformer<Dtype>::DataTransformer(const TransformationParameter& param,
     if (Caffe::root_solver()) {
       LOG(INFO) << "Loading mean file from: " << mean_file;
     }
+    // 从这里可以看出来meanfile 的存储格式是blob序列化的
     BlobProto blob_proto;
     ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
     data_mean_.FromProto(blob_proto);
   }
   // check if we want to use mean_value
+  // 这个是用在哪里?
+  // 应该是除了一维的数据吧,比如说训练神经网络语言模型用的语料库,这个算是一维的吧
   if (param_.mean_value_size() > 0) {
     CHECK(param_.has_mean_file() == false) <<
       "Cannot specify mean_file and mean_value at the same time";
@@ -36,9 +48,17 @@ DataTransformer<Dtype>::DataTransformer(const TransformationParameter& param,
   }
 }
 
+
+ /*
+  * 具体干活的代码来了
+  *
+  *  下面的这个函数最基本的一个函数,
+  *  其他的函数是将输入转化为 这个函数需要的参数,然后计算
+  * */
 template<typename Dtype>
 void DataTransformer<Dtype>::Transform(const Datum& datum,
                                        Dtype* transformed_data) {
+// data 是string类型的,因为datum是做了序列化的
   const string& data = datum.data();
   const int datum_channels = datum.channels();
   const int datum_height = datum.height();
@@ -62,6 +82,7 @@ void DataTransformer<Dtype>::Transform(const Datum& datum,
     CHECK_EQ(datum_width, data_mean_.width());
     mean = data_mean_.mutable_cpu_data();
   }
+   // 3 channel 图像的处理
   if (has_mean_values) {
     CHECK(mean_values_.size() == 1 || mean_values_.size() == datum_channels) <<
      "Specify either 1 mean_value or as many as channels: " << datum_channels;
@@ -78,10 +99,13 @@ void DataTransformer<Dtype>::Transform(const Datum& datum,
 
   int h_off = 0;
   int w_off = 0;
-  if (crop_size) {
+
+  // 对数据做切割处理
+   if (crop_size) {
     height = crop_size;
     width = crop_size;
     // We only do random crop when we do training.
+    // 这在train的时候,随机crop,为何test时候不做呢,为了提高结果?不是吧
     if (phase_ == TRAIN) {
       h_off = Rand(datum_height - crop_size + 1);
       w_off = Rand(datum_width - crop_size + 1);
@@ -91,6 +115,10 @@ void DataTransformer<Dtype>::Transform(const Datum& datum,
     }
   }
 
+
+   // 按照要求,一个一个元素读取数据
+   // 这么多层的for循环,可以用来做优化啊
+   // 比如用使用那个openmp
   Dtype datum_element;
   int top_index, data_index;
   for (int c = 0; c < datum_channels; ++c) {

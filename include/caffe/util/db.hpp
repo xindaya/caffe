@@ -8,7 +8,16 @@
 
 namespace caffe { namespace db {
 
+/*
+ * 1. READ
+ * 2. WRITE
+ * 3. NEW
+ * */
 enum Mode { READ, WRITE, NEW };
+
+/*
+ * 游标
+ * */
 
 class Cursor {
  public:
@@ -23,6 +32,15 @@ class Cursor {
   DISABLE_COPY_AND_ASSIGN(Cursor);
 };
 
+
+/*
+ * 数据库的事务机制
+ * 这里的这个是作什么用的?
+ * 难道不是只需要读取数据吗?
+ * 难道还要写?
+ *
+ * */
+
 class Transaction {
  public:
   Transaction() { }
@@ -33,6 +51,11 @@ class Transaction {
   DISABLE_COPY_AND_ASSIGN(Transaction);
 };
 
+
+/*
+ * 真正的主角
+ *
+ * */
 class DB {
  public:
   DB() { }

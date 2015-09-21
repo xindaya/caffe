@@ -7,8 +7,16 @@
 
 #include "caffe/util/db.hpp"
 
+
+// 好吧,我得承认,我确实只知道leveldb,不知道lmdb
+// leveldb是bigtable的单机实现,在学习bigtable的时候,顺便学习了一把leveldb
+// 但是lmdb从来没有接触过
+// 下面开始照葫芦画瓢过程
+//http://rayz0620.github.io/2015/05/25/lmdb_in_caffe/
+// 上面这个链接讲的非常好
 namespace caffe { namespace db {
 
+// 这个函数封装的不错
 inline void MDB_CHECK(int mdb_status) {
   CHECK_EQ(mdb_status, MDB_SUCCESS) << mdb_strerror(mdb_status);
 }
@@ -25,6 +33,7 @@ class LMDBCursor : public Cursor {
   }
   virtual void SeekToFirst() { Seek(MDB_FIRST); }
   virtual void Next() { Seek(MDB_NEXT); }
+// 好别扭的转换,习惯就好,习惯就好,习惯就好
   virtual string key() {
     return string(static_cast<const char*>(mdb_key_.mv_data), mdb_key_.mv_size);
   }
@@ -35,6 +44,9 @@ class LMDBCursor : public Cursor {
   virtual bool valid() { return valid_; }
 
  private:
+
+    // 这个方法藏得够深,不过还好,统一了db的接口,
+    // 对后续的工作就提供了一个好的开始
   void Seek(MDB_cursor_op op) {
     int mdb_status = mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, op);
     if (mdb_status == MDB_NOTFOUND) {
@@ -45,6 +57,12 @@ class LMDBCursor : public Cursor {
     }
   }
 
+  /*
+   * mdb_env是整个数据库环境的句柄，mdb_dbi是环境中一个数据库的句柄;
+   * mdb_key和mdb_data用来存放向数据库中输入数据的“值”;
+   * mdb_txn是数据库事物操作的句柄，”txn”是”transaction”的缩写;
+   *
+   * */
   MDB_txn* mdb_txn_;
   MDB_cursor* mdb_cursor_;
   MDB_val mdb_key_, mdb_value_;
@@ -53,8 +71,12 @@ class LMDBCursor : public Cursor {
 
 class LMDBTransaction : public Transaction {
  public:
+    // MDB_dbi 这个是lmdb数据库的句柄吧
+    // MDB_txn 是事务实现的方式
   explicit LMDBTransaction(MDB_dbi* mdb_dbi, MDB_txn* mdb_txn)
     : mdb_dbi_(mdb_dbi), mdb_txn_(mdb_txn) { }
+
+    // leveldb 还有个容器,这个lmdb的容器呢?,是放到mdb_txn_中间吗?
   virtual void Put(const string& key, const string& value);
   virtual void Commit() { MDB_CHECK(mdb_txn_commit(mdb_txn_)); }
 

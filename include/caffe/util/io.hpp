@@ -13,7 +13,11 @@
 namespace caffe {
 
 using ::google::protobuf::Message;
+/*
+ * 名字起得很好啊
+ * */
 
+// 创建临时文件
 inline void MakeTempFilename(string* temp_filename) {
   temp_filename->clear();
   *temp_filename = "/tmp/caffe_test.XXXXXX";
@@ -26,7 +30,7 @@ inline void MakeTempFilename(string* temp_filename) {
   *temp_filename = temp_filename_cstr;
   delete[] temp_filename_cstr;
 }
-
+//创建临时目录
 inline void MakeTempDir(string* temp_dirname) {
   temp_dirname->clear();
   *temp_dirname = "/tmp/caffe_test.XXXXXX";
@@ -39,7 +43,7 @@ inline void MakeTempDir(string* temp_dirname) {
   *temp_dirname = temp_dirname_cstr;
   delete[] temp_dirname_cstr;
 }
-
+//从text文件中读取proto文件
 bool ReadProtoFromTextFile(const char* filename, Message* proto);
 
 inline bool ReadProtoFromTextFile(const string& filename, Message* proto) {

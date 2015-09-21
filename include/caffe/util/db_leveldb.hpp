@@ -2,14 +2,18 @@
 #define CAFFE_UTIL_DB_LEVELDB_HPP
 
 #include <string>
-
+// 引入了leveldb的api
+//http://duanple.blog.163.com/blog/static/70971767201171705113636/
+// 上面的链接给出了leveldb的操作详细信息
+// leveldb的api非常清晰易懂
 #include "leveldb/db.h"
+// leveldb提供的批处理操作
 #include "leveldb/write_batch.h"
 
 #include "caffe/util/db.hpp"
 
 namespace caffe { namespace db {
-
+// 将leveldb的iterator封装为游标cursor
 class LevelDBCursor : public Cursor {
  public:
   explicit LevelDBCursor(leveldb::Iterator* iter)
@@ -25,12 +29,22 @@ class LevelDBCursor : public Cursor {
   leveldb::Iterator* iter_;
 };
 
+/*
+ * 不理解的是为什么要时实现不同的组件,为什么不搞一个大点的呢
+ * 将 transaction cusor 都放到db这个类里面?
+ * 为什么呢?
+ * 看不透
+ * */
+
+// 将leveldb提供的批量写,封装为一个事务
 class LevelDBTransaction : public Transaction {
  public:
   explicit LevelDBTransaction(leveldb::DB* db) : db_(db) { CHECK_NOTNULL(db_); }
+    // 一条一条的插入数据
   virtual void Put(const string& key, const string& value) {
     batch_.Put(key, value);
   }
+    // 提交,写入到数据库中
   virtual void Commit() {
     leveldb::Status status = db_->Write(leveldb::WriteOptions(), &batch_);
     CHECK(status.ok()) << "Failed to write batch to leveldb "
@@ -38,12 +52,18 @@ class LevelDBTransaction : public Transaction {
   }
 
  private:
+    // 数据库藏在这里
   leveldb::DB* db_;
+    // 执行事务操作的容器也藏在这里
   leveldb::WriteBatch batch_;
 
   DISABLE_COPY_AND_ASSIGN(LevelDBTransaction);
 };
 
+
+/*
+ *实现的是DB
+ * */
 class LevelDB : public DB {
  public:
   LevelDB() : db_(NULL) { }
@@ -55,6 +75,7 @@ class LevelDB : public DB {
       db_ = NULL;
     }
   }
+    // 这种命名方式很像c style 作者是c系出身吧
   virtual LevelDBCursor* NewCursor() {
     return new LevelDBCursor(db_->NewIterator(leveldb::ReadOptions()));
   }

@@ -9,6 +9,13 @@
 
 namespace caffe {
 
+    // by qiaohaijun
+    //这个方法的目的是对数据做基本的变换
+    // 1. scaling 做伸缩
+    // 2. mirror
+    // 3. substrating the image mean 减去均值
+
+    // 将不同的数据格式转化为blob格式
 /**
  * @brief Applies common transformations to the input data, such as
  * scaling, mirroring, substracting the image mean...
@@ -35,6 +42,9 @@ class DataTransformer {
    *    This is destination blob. It can be part of top blob's data if
    *    set_cpu_data() is used. See data_layer.cpp for an example.
    */
+
+    // 将一个数据点转化为blob
+
   void Transform(const Datum& datum, Blob<Dtype>* transformed_blob);
 
   /**
@@ -47,6 +57,9 @@ class DataTransformer {
    *    This is destination blob. It can be part of top blob's data if
    *    set_cpu_data() is used. See memory_layer.cpp for an example.
    */
+
+  // 将一个datum的数据点转化为blob
+
   void Transform(const vector<Datum> & datum_vector,
                 Blob<Dtype>* transformed_blob);
 
