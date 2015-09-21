@@ -245,18 +245,19 @@ class Layer {
 
 
 //bosen下的获取type name的函数
+ /**
    * @brief Returns the layer type as an enum value.
    */
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_NONE;
-  }
+ // virtual inline LayerParameter_LayerType type() const {
+ //   return LayerParameter_LayerType_NONE;
+ // }
 
   /**
    * @brief Returns the layer type name.
    */
-  virtual inline const string& type_name() const {
-    return LayerParameter_LayerType_Name(type());
-  }
+ // virtual inline const string& type_name() const {
+ //   return LayerParameter_LayerType_Name(type());
+ // }
 
 
 
