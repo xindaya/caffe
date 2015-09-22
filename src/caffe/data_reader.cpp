@@ -128,7 +128,7 @@ void DataReader::Body::read_one(db::Cursor* cursor, QueuePair* qp) {
   qp->full_.push(datum);
 
   // go to the next iter
-  然后将游标放到下一个数据的位置上
+  //然后将游标放到下一个数据的位置上
   cursor->Next();
   if (!cursor->valid()) {
     DLOG(INFO) << "Restarting data prefetching from start.";
