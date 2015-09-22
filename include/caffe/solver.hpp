@@ -3,7 +3,9 @@
 #include <boost/function.hpp>
 #include <string>
 #include <vector>
-
+#include <map>
+#include <fstream>
+#include <petuum_ps_common/include/petuum_ps.hpp>
 #include "caffe/net.hpp"
 
 namespace caffe {
