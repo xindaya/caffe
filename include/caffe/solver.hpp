@@ -38,12 +38,21 @@ typedef boost::function<SolverAction::Enum()> ActionCallback;
  * Requires implementation of ApplyUpdate to compute a parameter update
  * given the current state of the Net parameters.
  */
+ 
+// -----------------------------modification part -------------------------------  
+// Modify Solver Construction Function 
 template <typename Dtype>
 class Solver {
  public:
-  explicit Solver(const SolverParameter& param,
-      const Solver* root_solver = NULL);
-  explicit Solver(const string& param_file, const Solver* root_solver = NULL);
+  //explicit Solver(const SolverParameter& param, const Solver* root_solver = NULL);
+  //explicit Solver(const string& param_file, const Solver* root_solver = NULL);
+  explicit Solver(const SolverParameter& param, const Solver* root_solver = NULL, 
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
+      const int thread_id);
+  explicit Solver(const string& param_file, const Solver* root_solver = NULL, 
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
+      const int thread_id);
+// -----------------------------modification part end------------------------------- 
   void Init(const SolverParameter& param);
   void InitTrainNet();
   void InitTestNets();
@@ -69,6 +78,9 @@ class Solver {
     return test_nets_;
   }
   int iter() { return iter_; }
+// -----------------------------modification part ------------------------------- 
+  void PrintNetOutputs(const string& filename); 
+// -----------------------------modification part end-------------------------------  
 
   // Invoked at specific points during an iteration
   // 内部类
@@ -90,6 +102,28 @@ class Solver {
  protected:
   // Make and apply the update value for the current iteration.
   virtual void ApplyUpdate() = 0;
+// -----------------------------modification part -------------------------------
+// ************************************************************************
+// Currently add all these functions in, they has all been realized in inherit class or lower network  
+// ************************************************************************
+// PreSolve realized in SGDSolver, and called in construction function
+  // PreSolve is run before any solving iteration starts, allowing one to
+  // put up some scaffold.
+  virtual void PreSolve() {}
+  virtual void InitSVB();
+  // ForwardBackward realized in Net, the backward operation is different
+  virtual Dtype ForwardBackward(const vector<Blob<Dtype>* >& bottom);
+  // Get the update value for the current iteration.
+  virtual void ComputeUpdateValue(const int param_id) = 0;
+  virtual void ComputeUpdateValue() = 0;
+  virtual void ThreadSyncWithPS(const shared_ptr<Blob<Dtype> >& param,
+      const int param_id, const int param_owner, const int clock);
+  virtual void ThreadSyncWithSVB(
+    const shared_ptr<Blob<Dtype> >& param, const int param_id, 
+    const shared_ptr<Layer<Dtype> >& layer, const int layer_id,
+    const vector<Blob<Dtype>*>& top, const vector<Blob<Dtype>*>& bottom);
+  virtual void JoinSyncThreads();
+// -----------------------------modification part end-------------------------------  
   // The Solver::Snapshot function implements the basic snapshotting utility
   // that stores the learned net. You should implement the SnapshotSolverState()
   // function that produces a SolverState protocol buffer that needs to be
@@ -102,9 +136,20 @@ class Solver {
   void TestAll();
   void Test(const int test_net_id = 0);
   virtual void SnapshotSolverState(const string& model_filename) = 0;
+// -----------------------------modification part ------------------------------- 
+  virtual void SnapshotSolverState(SolverState* state) = 0;
+  // The Restore function implements how one should restore the solver to a
+  // previously snapshotted state. You should implement the RestoreSolverState()
+  // function that restores the state from a SolverState protocol buffer.
+  void Restore(const char* resume_file);
+  virtual void RestoreSolverState(const SolverState& state) = 0;
+// -----------------------------modification part end------------------------------- 
   virtual void RestoreSolverStateFromHDF5(const string& state_file) = 0;
   virtual void RestoreSolverStateFromBinaryProto(const string& state_file) = 0;
   void DisplayOutputBlobs(const int net_id);
+  void PrintOutputBlobs(shared_ptr<Net<Dtype> >& net, const bool trian, 
+      std::ofstream& outfile);
+// -----------------------------modification part end------------------------------- 
 
   SolverParameter param_;
   int iter_;
@@ -112,7 +157,25 @@ class Solver {
   shared_ptr<Net<Dtype> > net_;
   vector<shared_ptr<Net<Dtype> > > test_nets_;
   vector<Callback*> callbacks_;
+// -----------------------------modification part ------------------------------- 
+  int display_counter_;
+  int test_counter_;
+  int clock_counter_;
+  int param_table_staleness_;
+  // layer/net_name => vector of blobs' global indexes 
+  const map<string, vector<int> >* layer_blobs_global_idx_ptr_; 
 
+  vector<std::thread*> sync_threads_;
+  int max_local_sv_updates_;
+  int max_remote_sv_updates_;
+
+  const int thread_id_;
+  int client_id_;
+  int num_threads_;
+  int num_clients_;
+
+  petuum::HighResolutionTimer total_timer_;
+// -----------------------------modification part end------------------------------- 
   // The root solver that holds root nets (actually containing shared layers)
   // in data parallelism
   const Solver* const root_solver_;
@@ -155,19 +218,38 @@ class WorkerSolver : public Solver<Dtype> {
  * @brief Optimizes the parameters of a Net using
  *        stochastic gradient descent (SGD) with momentum.
  */
+// -----------------------------modification part ------------------------------- 
+// Modify SGDSolver construction function
 template <typename Dtype>
 class SGDSolver : public Solver<Dtype> {
  public:
-  explicit SGDSolver(const SolverParameter& param)
-      : Solver<Dtype>(param) { PreSolve(); }
-  explicit SGDSolver(const string& param_file)
-      : Solver<Dtype>(param_file) { PreSolve(); }
-
+  //explicit SGDSolver(const SolverParameter& param) : Solver<Dtype>(param) { PreSolve(); }
+  //explicit SGDSolver(const string& param_file) : Solver<Dtype>(param_file) { PreSolve(); }
+  explicit SGDSolver(const SolverParameter& param, 
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
+      const int thread_id) : Solver<Dtype>(
+      param, layer_blobs_global_idx_ptr, thread_id) {}
+  explicit SGDSolver(const string& param_file,
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
+      const int thread_id) : Solver<Dtype>(
+      param_file, layer_blobs_global_idx_ptr, thread_id) {}
+// -----------------------------modification part end------------------------------- 
   const vector<shared_ptr<Blob<Dtype> > >& history() { return history_; }
 
  protected:
-  void PreSolve();
+// -----------------------------modification part -------------------------------  
+// Modify PreSolve definition type, use virtual
+  //void PreSolve();
+  virtual void PreSolve();
+// -----------------------------modification part end------------------------------- 
   Dtype GetLearningRate();
+// -----------------------------modification part ------------------------------- 
+// Add functions in bosen
+  virtual void ComputeUpdateValue();
+  virtual void ComputeUpdateValue(const int param_id);
+  virtual void SnapshotSolverState(SolverState * state);
+  virtual void RestoreSolverState(const SolverState& state);
+// -----------------------------modification part end------------------------------- 
   virtual void ApplyUpdate();
   virtual void Normalize(int param_id);
   virtual void Regularize(int param_id);
@@ -186,30 +268,56 @@ class SGDSolver : public Solver<Dtype> {
 
   DISABLE_COPY_AND_ASSIGN(SGDSolver);
 };
-
+// -----------------------------modification part end------------------------------- 
 template <typename Dtype>
 class NesterovSolver : public SGDSolver<Dtype> {
  public:
-  explicit NesterovSolver(const SolverParameter& param)
-      : SGDSolver<Dtype>(param) {}
-  explicit NesterovSolver(const string& param_file)
-      : SGDSolver<Dtype>(param_file) {}
+  //explicit NesterovSolver(const SolverParameter& param) : SGDSolver<Dtype>(param) {}
+  //explicit NesterovSolver(const string& param_file) : SGDSolver<Dtype>(param_file) {}
+  explicit NesterovSolver(const SolverParameter& param, 
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr, 
+      const int thread_id) : SGDSolver<Dtype>(
+      param, layer_blobs_global_idx_ptr, thread_id) {}
+  explicit NesterovSolver(const string& param_file,
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr, 
+      const int thread_id) : SGDSolver<Dtype>(
+      param_file, layer_blobs_global_idx_ptr, thread_id) {}
+// -----------------------------modification part end------------------------------- 
 
  protected:
+// -----------------------------modification part ------------------------------- 
+  virtual void ComputeUpdateValue(const int param_id);
+  virtual void ComputeUpdateValue();
+// -----------------------------modification part end------------------------------- 
   virtual void ComputeUpdateValue(int param_id, Dtype rate);
 
   DISABLE_COPY_AND_ASSIGN(NesterovSolver);
 };
-
+// -----------------------------modification part ------------------------------- 
 template <typename Dtype>
 class AdaGradSolver : public SGDSolver<Dtype> {
  public:
-  explicit AdaGradSolver(const SolverParameter& param)
-      : SGDSolver<Dtype>(param) { constructor_sanity_check(); }
-  explicit AdaGradSolver(const string& param_file)
-      : SGDSolver<Dtype>(param_file) { constructor_sanity_check(); }
+  //explicit AdaGradSolver(const SolverParameter& param) : SGDSolver<Dtype>(param) { constructor_sanity_check(); }
+  //explicit AdaGradSolver(const string& param_file) : SGDSolver<Dtype>(param_file) { constructor_sanity_check(); }
+  explicit AdaGradSolver(const SolverParameter& param, 
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr, 
+      const int thread_id) 
+      : SGDSolver<Dtype>(param, layer_blobs_global_idx_ptr, thread_id) {
+    constructor_sanity_check(); 
+  }
+  explicit AdaGradSolver(const string& param_file,
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr, 
+      const int thread_id) : SGDSolver<Dtype>(
+      param_file, layer_blobs_global_idx_ptr, thread_id) {
+    constructor_sanity_check(); 
+  }
+// -----------------------------modification part end------------------------------- 
 
  protected:
+// -----------------------------modification part ------------------------------- 
+  virtual void ComputeUpdateValue(const int param_id);
+  virtual void ComputeUpdateValue();
+// -----------------------------modification part end------------------------------- 
   virtual void ComputeUpdateValue(int param_id, Dtype rate);
   void constructor_sanity_check() {
     CHECK_EQ(0, this->param_.momentum())
@@ -279,18 +387,27 @@ class AdamSolver : public SGDSolver<Dtype> {
 
   DISABLE_COPY_AND_ASSIGN(AdamSolver);
 };
-
+// -----------------------------modification part ------------------------------- 
+// Modify GetSolver construction function, input variable "layer_blobs_global_idx_ptr & thread_id"
 template <typename Dtype>
-Solver<Dtype>* GetSolver(const SolverParameter& param) {
+Solver<Dtype>* GetSolver(const SolverParameter& param, 
+    const map<string, vector<int> >* layer_blobs_global_idx_ptr,
+    const int thread_id) {
   SolverParameter_SolverType type = param.solver_type();
 
   switch (type) {
   case SolverParameter_SolverType_SGD:
-      return new SGDSolver<Dtype>(param);
+      //return new SGDSolver<Dtype>(param);
+      return new SGDSolver<Dtype>(param, layer_blobs_global_idx_ptr, 
+          thread_id);
   case SolverParameter_SolverType_NESTEROV:
-      return new NesterovSolver<Dtype>(param);
+      //return new NesterovSolver<Dtype>(param);
+      return new NesterovSolver<Dtype>(param, layer_blobs_global_idx_ptr,
+          thread_id);
   case SolverParameter_SolverType_ADAGRAD:
-      return new AdaGradSolver<Dtype>(param);
+      //return new AdaGradSolver<Dtype>(param);
+      return new AdaGradSolver<Dtype>(param, layer_blobs_global_idx_ptr, 
+          thread_id);	  
   case SolverParameter_SolverType_RMSPROP:
       return new RMSPropSolver<Dtype>(param);
   case SolverParameter_SolverType_ADADELTA:
@@ -302,7 +419,7 @@ Solver<Dtype>* GetSolver(const SolverParameter& param) {
   }
   return (Solver<Dtype>*) NULL;
 }
-
+// -----------------------------modification part end------------------------------- 
 }  // namespace caffe
 
 #endif  // CAFFE_OPTIMIZATION_SOLVER_HPP_
