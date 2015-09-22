@@ -58,7 +58,7 @@ class DataTransformer {
    *    set_cpu_data() is used. See memory_layer.cpp for an example.
    */
 
-  // 将一个datum的数据点转化为blob
+  // 将多个datum的数据点转化为blob
 
   void Transform(const vector<Datum> & datum_vector,
                 Blob<Dtype>* transformed_blob);

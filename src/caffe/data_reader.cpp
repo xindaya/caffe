@@ -14,15 +14,18 @@ namespace caffe {
 using boost::weak_ptr;
 
 map<const string, weak_ptr<DataReader::Body> > DataReader::bodies_;
-// 锁都是为了多线程用的,看来下面有多线程的东西,预警
+
 static boost::mutex bodies_mutex_;
+// 每个solver 有一个data_reader
 
 DataReader::DataReader(const LayerParameter& param)
+// 只填充free队列
     : queue_pair_(new QueuePair(  //
         param.data_param().prefetch() * param.data_param().batch_size())) {
   // 根据预取数据的大小和batchsize设置blockingqueue的容量
 
   // Get or create a body
+  // 全局只有一个body
   boost::mutex::scoped_lock lock(bodies_mutex_);
   string key = source_key(param);
   weak_ptr<Body>& weak = bodies_[key];
@@ -83,14 +86,14 @@ void DataReader::Body::InternalThreadEntry() {
   // 打开游标
   shared_ptr<db::Cursor> cursor(db->NewCursor());
   // 将queuepair用vector存放
-  // 一个solver一个queuepair
+
   vector<shared_ptr<QueuePair> > qps;
   try {
     int solver_count = param_.phase() == TRAIN ? Caffe::solver_count() : 1;
 
     // To ensure deterministic runs, only start running once all solvers
     // are ready. But solvers need to peek on one item during initialization,
-    // so read one item, thn wait for the next solver.\
+    // so read one item, then wait for the next solver.\
     // 这个只在初始化的时候运行一遍
     for (int i = 0; i < solver_count; ++i) {
       shared_ptr<QueuePair> qp(new_queue_pairs_.pop());
@@ -114,6 +117,9 @@ void DataReader::Body::InternalThreadEntry() {
   }
 }
 
+/*
+ * 果然名不虚传,就是一次只读一个datum
+ * */
 void DataReader::Body::read_one(db::Cursor* cursor, QueuePair* qp) {
   Datum* datum = qp->free_.pop();
   // TODO deserialize in-place instead of copy?

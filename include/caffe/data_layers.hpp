@@ -65,10 +65,13 @@ class BaseDataLayer : public Layer<Dtype> {
 
 template <typename Dtype>
 class Batch {
+    // batch 是两个blob
  public:
   Blob<Dtype> data_, label_;
 };
 
+// 继承 internalThread
+// 也是线程
 template <typename Dtype>
 class BasePrefetchingDataLayer :
     public BaseDataLayer<Dtype>, public InternalThread {
@@ -89,16 +92,22 @@ class BasePrefetchingDataLayer :
       const vector<Blob<Dtype>*>& top);
 
   // Prefetches batches (asynchronously if to GPU memory)
+    // gpu 显存是在这里处理的
+    // 为什么只取了三个batch?
   static const int PREFETCH_COUNT = 3;
 
  protected:
   virtual void InternalThreadEntry();
+    // 一听名字就是读数据用的
   virtual void load_batch(Batch<Dtype>* batch) = 0;
 
+  // 这里是声明的数组
+    // COUNT个Batch
   Batch<Dtype> prefetch_[PREFETCH_COUNT];
+  // 双buffer结构
   BlockingQueue<Batch<Dtype>*> prefetch_free_;
   BlockingQueue<Batch<Dtype>*> prefetch_full_;
-
+  // 应该是存放转化后的数组的
   Blob<Dtype> transformed_data_;
 };
 
@@ -111,6 +120,8 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top, const bool init_ps = false);
   // DataLayer uses DataReader instead for sharing for parallelism
+    // 通过dataReader
+    // datareader 是个中介
   virtual inline bool ShareInParallel() const { return false; }
   virtual inline const char* type() const { return "Data"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
@@ -118,30 +129,32 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual inline int MaxTopBlobs() const { return 2; }
 
 //bosen新加函数
- inline const shared_ptr<leveldb::DB> db() { return db_; }
-  inline void set_db(shared_ptr<leveldb::DB> db) { db_ = db; }
+// inline const shared_ptr<leveldb::DB> db() { return db_; }
+//  inline void set_db(shared_ptr<leveldb::DB> db) { db_ = db; }
 //bosen done
- protected:
-  virtual void load_batch(Batch<Dtype>* batch);//新版caffe用load_batch()替换了原生caffe的InternalThreadEntry()
 
+ protected:
+    //新版caffe用load_batch()替换了原生caffe的InternalThreadEntry()
+  virtual void load_batch(Batch<Dtype>* batch);
+  // 数据读取封装类
   DataReader reader_;
 
-//bosen新加的变量
- void InitializeDB();
-  void AdvanceIter();
-
-  bool shared_file_system_;
-  int step_size_;
-//bosen done
-  // LEVELDB
-  shared_ptr<leveldb::DB> db_;
-  shared_ptr<leveldb::Iterator> iter_;
-  // LMDB
-  MDB_env* mdb_env_;
-  MDB_dbi mdb_dbi_;
-  MDB_txn* mdb_txn_;
-  MDB_cursor* mdb_cursor_;
-  MDB_val mdb_key_, mdb_value_;
+//////bosen新加的变量
+//// void InitializeDB();
+////  void AdvanceIter();
+////
+////  bool shared_file_system_;
+////  int step_size_;
+////bosen done
+//  // LEVELDB
+//  shared_ptr<leveldb::DB> db_;
+//  shared_ptr<leveldb::Iterator> iter_;
+//  // LMDB
+//  MDB_env* mdb_env_;
+//  MDB_dbi mdb_dbi_;
+//  MDB_txn* mdb_txn_;
+//  MDB_cursor* mdb_cursor_;
+//  MDB_val mdb_key_, mdb_value_;
 };
 
 /**

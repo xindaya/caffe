@@ -21,6 +21,9 @@ namespace caffe {
  * way to keep parallel training deterministic.
  */
 
+// 这一步实现的是 从硬盘上读数据到内存里
+// source -> queue
+
 /*
  * 这个解释很详细
  * 将数据从source中读出来,放到queue中
@@ -57,9 +60,11 @@ class DataReader {
  * 具体双buffer是怎么做的,大家可以google一下,这个算是计算机程序设计中的一个trick
  * */
    public:
+      // 一对queue
+      // 命名很形象
     explicit QueuePair(int size);
     ~QueuePair();
-
+    // 这个blockingqueue内部存储的类型是Datum的指针
     BlockingQueue<Datum*> free_;
     BlockingQueue<Datum*> full_;
 
@@ -67,18 +72,25 @@ class DataReader {
   };
 
   // A single body is created per source
+// body 是thread 的子类, 看来是可以跑起来的哦
   class Body : public InternalThread {
    public:
     explicit Body(const LayerParameter& param);
     virtual ~Body();
 
    protected:
+      // 只要实现了IneternalThreadEntry() 就可以启动
     void InternalThreadEntry();
+      // 读一个datum的意思
     void read_one(db::Cursor* cursor, QueuePair* qp);
 
     const LayerParameter param_;
+
+    // queuepair 本身就是blockingqueue
+    // new_queue_pairs_ 又是一个blockingqueue,好复杂
     BlockingQueue<shared_ptr<QueuePair> > new_queue_pairs_;
 
+    // 我可以访问dataReader的私有变量
     friend class DataReader;
 
   DISABLE_COPY_AND_ASSIGN(Body);
@@ -93,7 +105,7 @@ class DataReader {
   const shared_ptr<QueuePair> queue_pair_;
   shared_ptr<Body> body_;
 
-  static map<const string, boost::weak_ptr<DataReader::Body> > bodies_;
+  static map<const string, boost::weak_ptr<:DataReader:Body> > bodies_;
 
 DISABLE_COPY_AND_ASSIGN(DataReader);
 };

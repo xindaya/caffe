@@ -17,14 +17,18 @@
 namespace caffe { namespace db {
 
 // 这个函数封装的不错
+// 检查是否成功
+// 根据返回码
 inline void MDB_CHECK(int mdb_status) {
   CHECK_EQ(mdb_status, MDB_SUCCESS) << mdb_strerror(mdb_status);
 }
 
 class LMDBCursor : public Cursor {
  public:
+    // 打开游标
   explicit LMDBCursor(MDB_txn* mdb_txn, MDB_cursor* mdb_cursor)
     : mdb_txn_(mdb_txn), mdb_cursor_(mdb_cursor), valid_(false) {
+    // 游标放到第一条数据
     SeekToFirst();
   }
   virtual ~LMDBCursor() {
@@ -48,6 +52,7 @@ class LMDBCursor : public Cursor {
     // 这个方法藏得够深,不过还好,统一了db的接口,
     // 对后续的工作就提供了一个好的开始
   void Seek(MDB_cursor_op op) {
+        // mdb_cursor_get 是lmdb 的方法, Seek也是封装
     int mdb_status = mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, op);
     if (mdb_status == MDB_NOTFOUND) {
       valid_ = false;

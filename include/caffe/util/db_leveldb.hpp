@@ -12,6 +12,9 @@
 
 #include "caffe/util/db.hpp"
 
+// leveldb 的核心数据结构
+// batch
+// iteration
 namespace caffe { namespace db {
 // 将leveldb的iterator封装为游标cursor
 class LevelDBCursor : public Cursor {

@@ -23,7 +23,9 @@ class Cursor {
  public:
   Cursor() { }
   virtual ~Cursor() { }
+    // 返回到第一条数据
   virtual void SeekToFirst() = 0;
+    // 下一条
   virtual void Next() = 0;
   virtual string key() = 0;
   virtual string value() = 0;
@@ -40,12 +42,16 @@ class Cursor {
  * 难道还要写?
  *
  * */
-
+// KV 存储
 class Transaction {
  public:
   Transaction() { }
   virtual ~Transaction() { }
+    // 类比git
+    // git add
   virtual void Put(const string& key, const string& value) = 0;
+  // 类比git
+  // git commit
   virtual void Commit() = 0;
 
   DISABLE_COPY_AND_ASSIGN(Transaction);
