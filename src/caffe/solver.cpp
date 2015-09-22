@@ -303,6 +303,7 @@ void Solver<Dtype>::Step(int iters) {
   int average_loss = this->param_.average_loss();
   vector<Dtype> losses;
   Dtype smoothed_loss = 0;
+  //clock_counter_ = 0;
 
   while (iter_ < stop_iter) {
     // zero-init the params
@@ -325,7 +326,12 @@ void Solver<Dtype>::Step(int iters) {
     // accumulate the loss and gradient
     Dtype loss = 0;
     for (int i = 0; i < param_.iter_size(); ++i) {
-      loss += net_->ForwardBackward(bottom_vec);
+      // -----------------------------modification part -------------------------------
+	  // Still use net::ForwardBackward, Table update and sync called after ApplyUpdate 
+	  // Abort: Use solver::ForwardBackward instead, because Backward() is not easy to modify
+	  loss += net_->ForwardBackward(bottom_vec);
+	  //loss = ForwardBackWard(bottom_vec);
+	  // -----------------------------modification part end------------------------------- 
     }
     loss /= param_.iter_size();
     // average the loss across iterations for smoothed reporting
@@ -365,6 +371,10 @@ void Solver<Dtype>::Step(int iters) {
       callbacks_[i]->on_gradients_ready();
     }
     ApplyUpdate();
+	// -----------------------------modification part -------------------------------
+	// Add UpdatePSTable & SyncWithPSTable(clock+1) here
+	// Should move to ApplyUpdate(), since it's update in loop and call param_id
+	// -----------------------------modification part end-------------------------------
 
     // Increment the internal iter_ counter -- its value should always indicate
     // the number of times the weights have been updated.
@@ -386,8 +396,8 @@ void Solver<Dtype>::Step(int iters) {
     }
 // -----------------------------modification part -------------------------------
 // The two lines are used after loop, but in bosen, they are in Solve()
-    //petuum::PSTableGroup::Clock();
-    //++clock_counter_;
+    petuum::PSTableGroup::Clock();
+    ++clock_counter_;
 // -----------------------------modification part end-------------------------------
   }
 }
@@ -957,6 +967,12 @@ void SGDSolver<Dtype>::ApplyUpdate() {
     Normalize(param_id);
     Regularize(param_id);
     ComputeUpdateValue(param_id, rate);
+// -----------------------------modification part -------------------------------
+// ************************************************************************
+	// Add UpdatePSTable and SyncWithPSTable here, from Solver::ForwardBackward -> Solver::ThreadSyncWithPS
+	this->net_->learnable_params()[param_id]->UpdatePSTable();
+	this->net_->learnable_params()[param_id]->param->SyncWithPSTable(clock_counter_ - param_table_staleness_ + 1);
+// -----------------------------modification part end-------------------------------  
   }
   this->net_->Update();
 }
