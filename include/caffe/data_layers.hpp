@@ -5,12 +5,11 @@
 #include <utility>
 #include <vector>
 
-#include "boost/scoped_ptr.hpp"
+
 
 #include "hdf5.h"
 
-#include "leveldb/db.h"
-#include "lmdb.h"
+
 
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
@@ -116,31 +115,14 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual inline int MinTopBlobs() const { return 1; }
   virtual inline int MaxTopBlobs() const { return 2; }
 
-//bosen新加函数
- inline const shared_ptr<leveldb::DB> db() { return db_; }
-  inline void set_db(shared_ptr<leveldb::DB> db) { db_ = db; }
-//bosen done
+
+
  protected:
-  virtual void load_batch(Batch<Dtype>* batch);//新版caffe用load_batch()替换了原生caffe的InternalThreadEntry()
+  virtual void load_batch(Batch<Dtype>* batch);
 
   DataReader reader_;
 
-//bosen新加的变量
- void InitializeDB();
-  void AdvanceIter();
 
-  bool shared_file_system_;
-  int step_size_;
-//bosen done
-  // LEVELDB
-  shared_ptr<leveldb::DB> db_;
-  shared_ptr<leveldb::Iterator> iter_;
-  // LMDB
-  MDB_env* mdb_env_;
-  MDB_dbi mdb_dbi_;
-  MDB_txn* mdb_txn_;
-  MDB_cursor* mdb_cursor_;
-  MDB_val mdb_key_, mdb_value_;
 };
 
 /**
