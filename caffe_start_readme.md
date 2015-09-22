@@ -5,8 +5,8 @@ Show how caffe works in these TWO versions
 
 \# 1. tools/caffe-main.cpp
  - 解析参数
- - caffe_engine::InitPS (Create Table)
- -  caffe_engin::Start (num worker threads)
+ - caffe_engine::InitPS (Create Table)  **--> Step 2**
+ -  caffe_engin::Start (num worker threads)  **--> Step 3**
 
 \# 2. caffe_engine::InitPS
 - Init() -> InitPS()
@@ -15,9 +15,9 @@ Show how caffe works in these TWO versions
 
 \# 3. caffe_engine::Start
 - solver: new Solver by GetSolver
-- solver -> Solve()
+- solver -> Solve()  **--> Step 4**
 
-\# 4. solver -> Solver()
+\# 4. solver -> Solve()
  - Solver::Init -> InitTrainNet() & InitTestNets()
  - Solver::Solve()
      - PreSolve()
@@ -25,18 +25,18 @@ Show how caffe works in these TWO versions
      - Synchronize (net_ -> SyncWithPS)
      - For each iter,
          - JoinSyncThreads & snapshot & TestAll
-         - Get loss by Solver::ForwardBackward(bottom_vec)
+         - Get loss by Solver::ForwardBackward(bottom_vec)  **--> Step 5**
          - Display & net_->table()->Inc
 
 \# 5. Solver::ForwardBackward()
 - net_->Forward(bottom, &loss)
 - for each layer, layer::Backward
 - Sync (Thread) (For **Inner Product** &**Convolution**  layer)
-    - new thread (Solver::ThreadSyncWithPS or ThreadSyncWithSVB)
+    - new thread (Solver::ThreadSyncWithPS or ThreadSyncWithSVB)  **--> Step 6**
     - net_->params() 
 
 \# 6. Solver::ThreadSyncWithPS()
-- ComputerUpdateValue (for each **blob(param_id)** in the layer of net)
+- ComputerUpdateValue (for each **blob(param_id)** in the layer of net)  **--> Step 7**
 - param->UpdatePSTable()
 - param->SyncWithPSTable(clock+1) -> Blob::set\_cpu\_ps\_data
 
@@ -46,7 +46,9 @@ Show how caffe works in these TWO versions
 - Regularization: L1 or L2, caffe_axpy for data & diff
 - Compute and Update value : caffe\_cpu\_axpby & caffe_copy 
 
+
 ## Multi-GPU Caffe的启动路线
+
 \# 1. tools/caffe.cpp
 - get_gpus & set device and mode
 - solver: new Solver by caffe::GetSolver
