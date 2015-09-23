@@ -262,7 +262,7 @@ class SGDSolver : public Solver<Dtype> {
   virtual void RestoreSolverState(const SolverState& state);
 // -----------------------------modification part end------------------------------- 
   //virtual void ApplyUpdate();
-  virtual void ApplyUpdate(clock);
+  virtual void ApplyUpdate(const in clock);
   virtual void Normalize(int param_id);
   virtual void Regularize(int param_id);
   virtual void ComputeUpdateValue(int param_id, Dtype rate);
