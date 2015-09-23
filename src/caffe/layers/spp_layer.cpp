@@ -92,7 +92,7 @@ void SPPLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
         spp_param);
     pooling_layers_.push_back(shared_ptr<PoolingLayer<Dtype> > (
         new PoolingLayer<Dtype>(pooling_param)));
-    pooling_layers_[0]->SetUp(bottom, top);
+    pooling_layers_[0]->SetUp(bottom, top, net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
     return;
   }
   // split layer output holders setup
@@ -103,7 +103,7 @@ void SPPLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   // split layer setup
   LayerParameter split_param;
   split_layer_.reset(new SplitLayer<Dtype>(split_param));
-  split_layer_->SetUp(bottom, split_top_vec_);
+  split_layer_->SetUp(bottom, split_top_vec_,net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
 
   for (int i = 0; i < pyramid_height_; i++) {
     // pooling layer input holders setup
@@ -121,7 +121,7 @@ void SPPLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
 
     pooling_layers_.push_back(shared_ptr<PoolingLayer<Dtype> > (
         new PoolingLayer<Dtype>(pooling_param)));
-    pooling_layers_[i]->SetUp(*pooling_bottom_vecs_[i], *pooling_top_vecs_[i]);
+    pooling_layers_[i]->SetUp(*pooling_bottom_vecs_[i], *pooling_top_vecs_[i], net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
 
     // flatten layer output holders setup
     flatten_outputs_.push_back(new Blob<Dtype>());
@@ -131,7 +131,7 @@ void SPPLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     // flatten layer setup
     LayerParameter flatten_param;
     flatten_layers_.push_back(new FlattenLayer<Dtype>(flatten_param));
-    flatten_layers_[i]->SetUp(*pooling_top_vecs_[i], *flatten_top_vecs_[i]);
+    flatten_layers_[i]->SetUp(*pooling_top_vecs_[i], *flatten_top_vecs_[i], net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
 
     // concat layer input holders setup
     concat_bottom_vec_.push_back(flatten_outputs_[i]);
@@ -140,7 +140,7 @@ void SPPLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   // concat layer setup
   LayerParameter concat_param;
   concat_layer_.reset(new ConcatLayer<Dtype>(concat_param));
-  concat_layer_->SetUp(concat_bottom_vec_, top);
+  concat_layer_->SetUp(concat_bottom_vec_, top, net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
 }
 
 template <typename Dtype>
@@ -164,7 +164,7 @@ void SPPLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
     LayerParameter pooling_param = GetPoolingParam(0, bottom_h_, bottom_w_,
         spp_param);
     pooling_layers_[0].reset(new PoolingLayer<Dtype>(pooling_param));
-    pooling_layers_[0]->SetUp(bottom, top);
+    pooling_layers_[0]->SetUp(bottom, top, net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
     pooling_layers_[0]->Reshape(bottom, top);
     return;
   }
@@ -176,7 +176,7 @@ void SPPLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
     pooling_layers_[i].reset(
         new PoolingLayer<Dtype>(pooling_param));
     pooling_layers_[i]->SetUp(
-        *pooling_bottom_vecs_[i], *pooling_top_vecs_[i]);
+        *pooling_bottom_vecs_[i], *pooling_top_vecs_[i], net_id,thread_id, init_ps, num_tables, layer_name_to_blob_global_idx );
     pooling_layers_[i]->Reshape(
         *pooling_bottom_vecs_[i], *pooling_top_vecs_[i]);
     flatten_layers_[i]->Reshape(
