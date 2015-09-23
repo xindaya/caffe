@@ -236,12 +236,12 @@ class SGDSolver : public Solver<Dtype> {
  public:
   //explicit SGDSolver(const SolverParameter& param) : Solver<Dtype>(param) { PreSolve(); }
   //explicit SGDSolver(const string& param_file) : Solver<Dtype>(param_file) { PreSolve(); }
-  explicit SGDSolver(const SolverParameter& param, 
+  explicit SGDSolver(const SolverParameter& param, const Solver* root_solver = NULL,
       const map<string, vector<int> >* layer_blobs_global_idx_ptr,
       const int thread_id) : Solver<Dtype>(
       //param, layer_blobs_global_idx_ptr, thread_id) {}
 	  param, root_solver, layer_blobs_global_idx_ptr, thread_id) {}
-  explicit SGDSolver(const string& param_file,
+  explicit SGDSolver(const string& param_file, const Solver* root_solver = NULL,
       const map<string, vector<int> >* layer_blobs_global_idx_ptr,
       const int thread_id) : Solver<Dtype>(
       //param_file, layer_blobs_global_idx_ptr, thread_id) {}
@@ -283,6 +283,7 @@ class SGDSolver : public Solver<Dtype> {
   DISABLE_COPY_AND_ASSIGN(SGDSolver);
 };
 // -----------------------------modification part end------------------------------- 
+
 template <typename Dtype>
 class NesterovSolver : public SGDSolver<Dtype> {
  public:
@@ -387,6 +388,7 @@ class AdaDeltaSolver : public SGDSolver<Dtype> {
  * [1] D. P. Kingma and J. L. Ba, "ADAM: A Method for Stochastic Optimization."
  *     arXiv preprint arXiv:1412.6980v8 (2014).
  */
+
 template <typename Dtype>
 class AdamSolver : public SGDSolver<Dtype> {
  public:
@@ -401,6 +403,8 @@ class AdamSolver : public SGDSolver<Dtype> {
 
   DISABLE_COPY_AND_ASSIGN(AdamSolver);
 };
+
+
 // -----------------------------modification part ------------------------------- 
 // Modify GetSolver construction function, input variable "layer_blobs_global_idx_ptr & thread_id"
 template <typename Dtype>
