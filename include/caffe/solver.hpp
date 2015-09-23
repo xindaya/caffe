@@ -47,11 +47,11 @@ class Solver {
   //explicit Solver(const SolverParameter& param, const Solver* root_solver = NULL);
   //explicit Solver(const string& param_file, const Solver* root_solver = NULL);
   explicit Solver(const SolverParameter& param, const Solver* root_solver = NULL, 
-      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
-      const int thread_id);
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr = NULL,
+      const int thread_id = 0);
   explicit Solver(const string& param_file, const Solver* root_solver = NULL, 
-      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
-      const int thread_id);
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr = NULL,
+      const int thread_id = 0);
 // -----------------------------modification part end------------------------------- 
   void Init(const SolverParameter& param);
   void InitTrainNet();
@@ -141,7 +141,7 @@ class Solver {
   // The Restore function implements how one should restore the solver to a
   // previously snapshotted state. You should implement the RestoreSolverState()
   // function that restores the state from a SolverState protocol buffer.
-  void Restore(const char* resume_file);
+  //void Restore(const char* resume_file);
   virtual void RestoreSolverState(const SolverState& state) = 0;
 // -----------------------------modification part end------------------------------- 
   virtual void RestoreSolverStateFromHDF5(const string& state_file) = 0;
