@@ -101,7 +101,10 @@ class Solver {
 
  protected:
   // Make and apply the update value for the current iteration.
-  virtual void ApplyUpdate() = 0;
+// -----------------------------modification part -------------------------------
+  //virtual void ApplyUpdate() = 0;
+  // Add clock variable
+  virtual void ApplyUpdate(const int clock) = 0;
 // -----------------------------modification part -------------------------------
 // ************************************************************************
 // Currently add all these functions in, they has all been realized in inherit class or lower network  
@@ -202,7 +205,8 @@ class WorkerSolver : public Solver<Dtype> {
       : Solver<Dtype>(param, root_solver) {}
 
  protected:
-  void ApplyUpdate() {}
+  //void ApplyUpdate() {}
+  void ApplyUpdate(const int clock) {}
   void SnapshotSolverState(const string& model_filename) {
     LOG(FATAL) << "Should not be called on worker solver.";
   }
@@ -257,7 +261,8 @@ class SGDSolver : public Solver<Dtype> {
   virtual void SnapshotSolverState(SolverState * state);
   virtual void RestoreSolverState(const SolverState& state);
 // -----------------------------modification part end------------------------------- 
-  virtual void ApplyUpdate();
+  //virtual void ApplyUpdate();
+  virtual void ApplyUpdate(clock);
   virtual void Normalize(int param_id);
   virtual void Regularize(int param_id);
   virtual void ComputeUpdateValue(int param_id, Dtype rate);
