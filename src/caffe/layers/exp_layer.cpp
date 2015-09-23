@@ -6,10 +6,11 @@
 #include "caffe/vision_layers.hpp"
 
 namespace caffe {
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 void ExpLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+      const vector<Blob<Dtype>*>& top,const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
   NeuronLayer<Dtype>::LayerSetUp(bottom, top);
   const Dtype base = this->layer_param_.exp_param().base();
   if (base != Dtype(-1)) {
