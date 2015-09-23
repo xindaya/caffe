@@ -254,7 +254,7 @@ void Solver<Dtype>::InitTestNets() {
     if (Caffe::root_solver()) {
       //test_nets_[i].reset(new Net<Dtype>(net_params[i]));
 	  //test_nets_[i].reset(new Net<Dtype>(net_params[i], thread_id_, i));
-	  test_nets_[i].reset(new Net<Dtype>(net_params[i], this, thread_id_, i));
+	  test_nets_[i].reset(new Net<Dtype>(net_params[i], this->test_nets_[i].get(), thread_id_, i));
     } else {
       test_nets_[i].reset(new Net<Dtype>(net_params[i], root_solver_->test_nets_[i].get()));
     }
