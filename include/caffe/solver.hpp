@@ -236,16 +236,16 @@ class SGDSolver : public Solver<Dtype> {
  public:
   //explicit SGDSolver(const SolverParameter& param) : Solver<Dtype>(param) { PreSolve(); }
   //explicit SGDSolver(const string& param_file) : Solver<Dtype>(param_file) { PreSolve(); }
-  explicit SGDSolver(const SolverParameter& param, const Solver<Dtype>* root_solver,
-      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
-      const int thread_id) : Solver<Dtype>(
+  explicit SGDSolver(const SolverParameter& param, const Solver<Dtype>* root_solver = NULL,
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr = NULL,
+      const int thread_id = 0) : Solver<Dtype>(
       //param, layer_blobs_global_idx_ptr, thread_id) {}
 	  param, root_solver, layer_blobs_global_idx_ptr, thread_id) {}
-  explicit SGDSolver(const string& param_file, const Solver<Dtype>* root_solver,
-      const map<string, vector<int> >* layer_blobs_global_idx_ptr,
-      const int thread_id) : Solver<Dtype>(
+  explicit SGDSolver(const string& param_file, const Solver<Dtype>* root_solver = NULL,
+      const map<string, vector<int> >* layer_blobs_global_idx_ptr = NULL,
+      const int thread_id = 0) : Solver<Dtype>(
       //param_file, layer_blobs_global_idx_ptr, thread_id) {}
-	  param, root_solver, layer_blobs_global_idx_ptr, thread_id) {}
+	  param_file, root_solver, layer_blobs_global_idx_ptr, thread_id) {}
 // -----------------------------modification part end------------------------------- 
   const vector<shared_ptr<Blob<Dtype> > >& history() { return history_; }
 
