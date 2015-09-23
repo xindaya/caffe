@@ -1211,6 +1211,9 @@ void SGDSolver<Dtype>::RestoreSolverStateFromHDF5(const string& state_file) {
   H5Fclose(file_hid);
 }
 
+// -----------------------------modification part ------------------------------- 
+// Annotation here, these types of solvers except SGDSolver dont take into consideration
+/*
 template <typename Dtype>
 void NesterovSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
   CHECK(Caffe::root_solver());
@@ -1674,13 +1677,15 @@ void AdamSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
     LOG(FATAL) << "Unknown caffe mode: " << Caffe::mode();
   }
 }
-
+*/
 INSTANTIATE_CLASS(Solver);
 INSTANTIATE_CLASS(SGDSolver);
+// -----------------------------modification part ------------------------------- 
+/*
 INSTANTIATE_CLASS(NesterovSolver);
 INSTANTIATE_CLASS(AdaGradSolver);
 INSTANTIATE_CLASS(RMSPropSolver);
 INSTANTIATE_CLASS(AdaDeltaSolver);
 INSTANTIATE_CLASS(AdamSolver);
-
+*/
 }  // namespace caffe
