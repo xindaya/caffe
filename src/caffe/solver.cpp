@@ -511,6 +511,7 @@ void Solver<Dtype>::Solve(const char* resume_file) {
 // Just Add these functions here, 
 // including: ForwardBackward, ThreadSyncWithPS, ThreadSyncWithSVB, JoinSyncThreads
 // ********************************************************************************
+/*
 template <typename Dtype>
 Dtype Solver<Dtype>::ForwardBackward(const vector<Blob<Dtype>* >& bottom) {
   sync_threads_.clear();
@@ -560,7 +561,7 @@ Dtype Solver<Dtype>::ForwardBackward(const vector<Blob<Dtype>* >& bottom) {
 
   return loss;
 }
-
+*/
 /// This function is used for created thread to sync one (conv) layer with the PS
 template <typename Dtype>
 void Solver<Dtype>::ThreadSyncWithPS(const shared_ptr<Blob<Dtype> >& param,
@@ -976,8 +977,8 @@ void SGDSolver<Dtype>::ApplyUpdate(const int clock) {
 	// Add UpdatePSTable and SyncWithPSTable here, from Solver::ForwardBackward -> Solver::ThreadSyncWithPS
 	this->net_->learnable_params()[param_id]->UpdatePSTable();
 	// clock = clock_counter_ - param_table_staleness_
-	this->net_->learnable_params()[param_id]->param->SyncWithPSTable(clock + 1);
-	//this->net_->learnable_params()[param_id]->param->SyncWithPSTable(clock_counter_ - param_table_staleness_ + 1);
+	this->net_->learnable_params()[param_id]->SyncWithPSTable(clock + 1);
+	//this->net_->learnable_params()[param_id]->SyncWithPSTable(clock_counter_ - param_table_staleness_ + 1);
 // -----------------------------modification part end-------------------------------  
   }
   this->net_->Update();

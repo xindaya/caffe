@@ -239,11 +239,13 @@ class SGDSolver : public Solver<Dtype> {
   explicit SGDSolver(const SolverParameter& param, 
       const map<string, vector<int> >* layer_blobs_global_idx_ptr,
       const int thread_id) : Solver<Dtype>(
-      param, layer_blobs_global_idx_ptr, thread_id) {}
+      //param, layer_blobs_global_idx_ptr, thread_id) {}
+	  param, root_solver, layer_blobs_global_idx_ptr, thread_id) {}
   explicit SGDSolver(const string& param_file,
       const map<string, vector<int> >* layer_blobs_global_idx_ptr,
       const int thread_id) : Solver<Dtype>(
-      param_file, layer_blobs_global_idx_ptr, thread_id) {}
+      //param_file, layer_blobs_global_idx_ptr, thread_id) {}
+	  param, root_solver, layer_blobs_global_idx_ptr, thread_id) {}
 // -----------------------------modification part end------------------------------- 
   const vector<shared_ptr<Blob<Dtype> > >& history() { return history_; }
 
