@@ -18,8 +18,7 @@ template <typename Dtype>
 void BaseDataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
      map<string, vector<int> >* layer_name_to_blob_global_idx) {
- //bosen新加内容
- data_transformer_.set_phase(Caffe::phase(this->thread_id_));
+
   if (top.size() == 1) {
     output_labels_ = false;
   } else {
