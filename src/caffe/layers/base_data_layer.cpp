@@ -20,10 +20,7 @@ template <typename Dtype>
 void BaseDataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
      map<string, vector<int> >* layer_name_to_blob_global_idx) {
- //bosen新加内容
- // 获取phase
 
- data_transformer_.set_phase(Caffe::phase(this->thread_id_));
 
   // 根据是否有label来处理,有label,将output_labels 设置为true
   if (top.size() == 1) {

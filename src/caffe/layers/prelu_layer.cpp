@@ -6,10 +6,11 @@
 #include "caffe/vision_layers.hpp"
 
 namespace caffe {
-
+//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 template <typename Dtype>
 void PReLULayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-    const vector<Blob<Dtype>*>& top) {
+    const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
+    map<string, vector<int> >* layer_name_to_blob_global_idx) {
   CHECK_GE(bottom[0]->num_axes(), 2)
       << "Number of axes of bottom blob must be >=2.";
   PReLUParameter prelu_param = this->layer_param().prelu_param();
