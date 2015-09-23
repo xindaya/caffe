@@ -202,7 +202,9 @@ class EmbedLayer : public Layer<Dtype> {
   explicit EmbedLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -239,7 +241,9 @@ class FilterLayer : public Layer<Dtype> {
   explicit FilterLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -427,7 +431,9 @@ class ReshapeLayer : public Layer<Dtype> {
   explicit ReshapeLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -466,7 +472,9 @@ class ReductionLayer : public Layer<Dtype> {
   explicit ReductionLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
+      int* num_tables = NULL,
+      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
