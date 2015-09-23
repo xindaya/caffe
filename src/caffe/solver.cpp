@@ -50,7 +50,7 @@ Solver<Dtype>::Solver(const SolverParameter& param, const Solver* root_solver,
 template <typename Dtype>
 Solver<Dtype>::Solver(const string& param_file, const Solver* root_solver,
     const map<string, vector<int> >* layer_blobs_global_idx_ptr,
-    const int thread_id))
+    const int thread_id)
     : net_(), callbacks_(), root_solver_(root_solver),
       requested_early_exit_(false),
     layer_blobs_global_idx_ptr_(layer_blobs_global_idx_ptr), 
@@ -370,7 +370,9 @@ void Solver<Dtype>::Step(int iters) {
     for (int i = 0; i < callbacks_.size(); ++i) {
       callbacks_[i]->on_gradients_ready();
     }
-    ApplyUpdate();
+    //ApplyUpdate()
+	// Modify: add clock variable
+	ApplyUpdate(clock_counter_ - param_table_staleness_);
 	// -----------------------------modification part -------------------------------
 	// Add UpdatePSTable & SyncWithPSTable(clock+1) here
 	// Should move to ApplyUpdate(), since it's update in loop and call param_id
@@ -412,7 +414,7 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   if (client_id_ == 0 && thread_id_ == 0) {
     LOG(INFO) << "Solving " << net_->name();
   }
-  PreSolve()
+  PreSolve();
   util::Context& context = util::Context::get_instance();
 
   // Register net output tables  
@@ -955,7 +957,8 @@ void SGDSolver<Dtype>::ClipGradients() {
 }
 
 template <typename Dtype>
-void SGDSolver<Dtype>::ApplyUpdate() {
+//void SGDSolver<Dtype>::ApplyUpdate() {
+void SGDSolver<Dtype>::ApplyUpdate(const int clock) {
   CHECK(Caffe::root_solver());
   Dtype rate = GetLearningRate();
   if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
@@ -971,7 +974,9 @@ void SGDSolver<Dtype>::ApplyUpdate() {
 // ************************************************************************
 	// Add UpdatePSTable and SyncWithPSTable here, from Solver::ForwardBackward -> Solver::ThreadSyncWithPS
 	this->net_->learnable_params()[param_id]->UpdatePSTable();
-	this->net_->learnable_params()[param_id]->param->SyncWithPSTable(clock_counter_ - param_table_staleness_ + 1);
+	// clock = clock_counter_ - param_table_staleness_
+	this->net_->learnable_params()[param_id]->param->SyncWithPSTable(clock + 1);
+	//this->net_->learnable_params()[param_id]->param->SyncWithPSTable(clock_counter_ - param_table_staleness_ + 1);
 // -----------------------------modification part end-------------------------------  
   }
   this->net_->Update();
