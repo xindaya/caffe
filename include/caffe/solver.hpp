@@ -212,6 +212,13 @@ class WorkerSolver : public Solver<Dtype> {
   void RestoreSolverStateFromHDF5(const string& state_file) {
     LOG(FATAL) << "Should not be called on worker solver.";
   }
+  // -----------------------------modification part ------------------------------- 
+  // Just Add these virtual functions in bosen to avoid memory allocation failure
+  virtual void ComputeUpdateValue();
+  virtual void ComputeUpdateValue(const int param_id);
+  virtual void SnapshotSolverState(SolverState * state);
+  virtual void RestoreSolverState(const SolverState& state);
+  // -----------------------------modification part end------------------------------- 
 };
 
 /**
