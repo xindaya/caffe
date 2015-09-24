@@ -6,7 +6,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
-////除了加注释的地方，其余修改的地方只是基于原生caffe的升级
+
 namespace caffe {
 
 template <typename Dtype>
@@ -35,8 +35,7 @@ template <typename Dtype>
 void InnerProductLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down,
     const vector<Blob<Dtype>*>& bottom) {
-    //&& !util::Context::use_svb()为bosen新加内容
-  if (this->param_propagate_down_[0]&& !util::Context::use_svb()) {
+  if (this->param_propagate_down_[0]) {
     const Dtype* top_diff = top[0]->gpu_diff();
     const Dtype* bottom_data = bottom[0]->gpu_data();
     // Gradient with respect to weight
@@ -58,18 +57,7 @@ void InnerProductLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         bottom[0]->mutable_gpu_diff());
   }
 }
-//bosen新加函数ComputeGradientFromSV_gpu()，语义理解从sv_gpu中计算梯度
-template <typename Dtype>
-void InnerProductLayer<Dtype>::ComputeGradientFromSV_gpu(
-    const SufficientVector* v) {
-  // Gradient with respect to weight
-  const Dtype* top_diff = (const Dtype*)v->gpu_a();
-  const Dtype* bottom_data = (const Dtype*)v->gpu_b();
-  CHECK_EQ(v->a_size() / sizeof(Dtype), N_ * M_);
-  CHECK_EQ(v->b_size() / sizeof(Dtype), K_ * M_);
-  caffe_gpu_gemm<Dtype>(CblasTrans, CblasNoTrans, N_, K_, M_, (Dtype)1.,
-      top_diff, bottom_data, (Dtype)0., this->blobs_[0]->mutable_gpu_diff());
-}
+
 INSTANTIATE_LAYER_GPU_FUNCS(InnerProductLayer);
 
 }  // namespace caffe

@@ -8,15 +8,11 @@
 #include "caffe/vision_layers.hpp"
 
 namespace caffe {
-//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
-//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
 
 template <typename Dtype>
 void CuDNNPoolingLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-    const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
-    map<string, vector<int> >* layer_name_to_blob_global_idx) {
-  PoolingLayer<Dtype>::LayerSetUp(bottom, top, init_ps, num_tables,
-      layer_name_to_blob_global_idx);
+    const vector<Blob<Dtype>*>& top) {
+  PoolingLayer<Dtype>::LayerSetUp(bottom, top);
   CUDNN_CHECK(cudnnCreate(&handle_));
   cudnn::createTensor4dDesc<Dtype>(&bottom_desc_);
   cudnn::createTensor4dDesc<Dtype>(&top_desc_);

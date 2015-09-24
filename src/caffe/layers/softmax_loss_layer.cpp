@@ -6,20 +6,13 @@
 #include "caffe/layer_factory.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
-//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
-
-
 
 namespace caffe {
-//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
+
 template <typename Dtype>
 void SoftmaxWithLossLayer<Dtype>::LayerSetUp(
-    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top,
-    const bool init_ps, int* num_tables,
-    map<string, vector<int> >* layer_name_to_blob_global_idx) {
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
-  LossLayer<Dtype>::LayerSetUp(bottom, top, init_ps, num_tables, 
-      layer_name_to_blob_global_idx);
+    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+  LossLayer<Dtype>::LayerSetUp(bottom, top);
   LayerParameter softmax_param(this->layer_param_);
   softmax_param.set_type("Softmax");
   softmax_layer_ = LayerRegistry<Dtype>::CreateLayer(softmax_param);
@@ -27,9 +20,7 @@ void SoftmaxWithLossLayer<Dtype>::LayerSetUp(
   softmax_bottom_vec_.push_back(bottom[0]);
   softmax_top_vec_.clear();
   softmax_top_vec_.push_back(&prob_);
-  //按照bosen下定义的SetUp输入参数形式重新定义LayerSetUp()函数的输入
-  softmax_layer_->SetUp(softmax_bottom_vec_, softmax_top_vec_, this->net_id_,
-      this->thread_id_, init_ps, num_tables, layer_name_to_blob_global_idx);
+  softmax_layer_->SetUp(softmax_bottom_vec_, softmax_top_vec_);
 
   has_ignore_label_ =
     this->layer_param_.loss_param().has_ignore_label();

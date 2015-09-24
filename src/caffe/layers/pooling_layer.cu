@@ -7,7 +7,6 @@
 #include "caffe/vision_layers.hpp"
 
 namespace caffe {
-//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
 
 template <typename Dtype>
 __global__ void MaxPoolForward(const int nthreads,
@@ -188,7 +187,7 @@ void PoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         kernel_w_, stride_h_, stride_w_, pad_h_, pad_w_, top_data);
     break;
   case PoolingParameter_PoolMethod_STOCHASTIC:
-    if (this->phase_ == TRAIN) {//bosen下的phase_包含thread_id_参数，此处并未做修改
+    if (this->phase_ == TRAIN) {
       // We need to create the random index as well.
       caffe_gpu_rng_uniform(count, Dtype(0), Dtype(1),
                             rand_idx_.mutable_gpu_data());

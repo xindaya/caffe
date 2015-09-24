@@ -12,6 +12,7 @@
 
 #define HDF5_DATA_DATASET_NAME "data"
 #define HDF5_DATA_LABEL_NAME "label"
+
 namespace caffe {
 
 /**
@@ -47,11 +48,8 @@ class AbsValLayer : public NeuronLayer<Dtype> {
  public:
   explicit AbsValLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "AbsVal"; }
   virtual inline int ExactNumBottomBlobs() const { return 1; }
@@ -163,11 +161,8 @@ class DropoutLayer : public NeuronLayer<Dtype> {
    */
   explicit DropoutLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -226,11 +221,8 @@ class ExpLayer : public NeuronLayer<Dtype> {
    */
   explicit ExpLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "Exp"; }
 
@@ -293,11 +285,8 @@ class LogLayer : public NeuronLayer<Dtype> {
    */
   explicit LogLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "Log"; }
 
@@ -361,11 +350,8 @@ class PowerLayer : public NeuronLayer<Dtype> {
    */
   explicit PowerLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "Power"; }
 
@@ -498,11 +484,8 @@ class CuDNNReLULayer : public ReLULayer<Dtype> {
  public:
   explicit CuDNNReLULayer(const LayerParameter& param)
       : ReLULayer<Dtype>(param), handles_setup_(false) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual ~CuDNNReLULayer();
@@ -584,11 +567,8 @@ class CuDNNSigmoidLayer : public SigmoidLayer<Dtype> {
  public:
   explicit CuDNNSigmoidLayer(const LayerParameter& param)
       : SigmoidLayer<Dtype>(param), handles_setup_(false) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual ~CuDNNSigmoidLayer();
@@ -672,11 +652,8 @@ class CuDNNTanHLayer : public TanHLayer<Dtype> {
  public:
   explicit CuDNNTanHLayer(const LayerParameter& param)
       : TanHLayer<Dtype>(param), handles_setup_(false) {}
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual ~CuDNNTanHLayer();
@@ -709,11 +686,8 @@ class ThresholdLayer : public NeuronLayer<Dtype> {
    */
   explicit ThresholdLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
- //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "Threshold"; }
 
@@ -767,11 +741,8 @@ class PReLULayer : public NeuronLayer<Dtype> {
   explicit PReLULayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
 
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);

@@ -3,7 +3,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
-//未做修改
+
 namespace caffe {
 
 template <typename Dtype>

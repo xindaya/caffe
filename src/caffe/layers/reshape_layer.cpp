@@ -4,11 +4,10 @@
 #include "caffe/layer.hpp"
 
 namespace caffe {
-//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
+
 template <typename Dtype>
 void ReshapeLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-    const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
-    map<string, vector<int> >* layer_name_to_blob_global_idx) {
+    const vector<Blob<Dtype>*>& top) {
   inferred_axis_ = -1;
   copy_axes_.clear();
   const BlobShape& top_blob_shape = this->layer_param_.reshape_param().shape();

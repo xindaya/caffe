@@ -1,5 +1,6 @@
+#ifdef USE_OPENCV
 #include <opencv2/core/core.hpp>
-
+#endif  // USE_OPENCV
 #include <stdint.h>
 
 #include <string>
@@ -24,10 +25,10 @@ template <typename Dtype>
 DataLayer<Dtype>::~DataLayer() {
   this->StopInternalThread();
 }
-//按照bosen 下的DataLayerSetUp()参数方式定义DataLayerSetUp（）函数
+
 template <typename Dtype>
 void DataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps) {
+      const vector<Blob<Dtype>*>& top) {
   const int batch_size = this->layer_param_.data_param().batch_size();
   // Read a data point, and use it to initialize the top blob.
   Datum& datum = *(reader_.full().peek());

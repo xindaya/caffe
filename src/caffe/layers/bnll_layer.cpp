@@ -3,7 +3,7 @@
 
 #include "caffe/layer.hpp"
 #include "caffe/vision_layers.hpp"
-//未做修改
+
 namespace caffe {
 
 const float kBNLL_THRESHOLD = 50.;

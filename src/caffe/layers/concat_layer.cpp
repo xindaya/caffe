@@ -3,13 +3,12 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/vision_layers.hpp"
-//整个并未涉及bosen对该文件做的修改，修改的地方只是基于原生caffe的升级
+
 namespace caffe {
-//按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
+
 template <typename Dtype>
 void ConcatLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps, int* num_tables,
-    map<string, vector<int> >* layer_name_to_blob_global_idx) {
+      const vector<Blob<Dtype>*>& top) {
   const ConcatParameter& concat_param = this->layer_param_.concat_param();
   CHECK(!(concat_param.has_axis() && concat_param.has_concat_dim()))
       << "Either axis or concat_dim should be specified; not both.";

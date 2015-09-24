@@ -4,12 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-
-
 #include "hdf5.h"
-
-
 
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
@@ -36,16 +31,12 @@ class BaseDataLayer : public Layer<Dtype> {
   // LayerSetUp: implements common data layer setup functionality, and calls
   // DataLayerSetUp to do special data layer setup for individual layer types.
   // This method may not be overridden except by the BasePrefetchingDataLayer.
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   // Data layers should be shared by multiple solvers in parallel
   virtual inline bool ShareInParallel() const { return true; }
-  //bosen新加内容，对DataLayerSetUp（）函数增加了变量init_ps
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false) {}
+      const vector<Blob<Dtype>*>& top) {}
   // Data layers have no bottoms, so reshaping is trivial.
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {}
@@ -75,11 +66,8 @@ class BasePrefetchingDataLayer :
   // LayerSetUp: implements common data layer setup functionality, and calls
   // DataLayerSetUp to do special data layer setup for individual layer types.
   // This method may not be overridden.
-  //bosen新定义的LayerSetUp（）函数形式
   void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
 
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
@@ -105,9 +93,8 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
  public:
   explicit DataLayer(const LayerParameter& param);
   virtual ~DataLayer();
-  //bosen对DataLayerSetUp函数的重新定义，增加了变量init_ps
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false);
+      const vector<Blob<Dtype>*>& top);
   // DataLayer uses DataReader instead for sharing for parallelism
   virtual inline bool ShareInParallel() const { return false; }
   virtual inline const char* type() const { return "Data"; }
@@ -115,14 +102,10 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual inline int MinTopBlobs() const { return 1; }
   virtual inline int MaxTopBlobs() const { return 2; }
 
-
-
  protected:
   virtual void load_batch(Batch<Dtype>* batch);
 
   DataReader reader_;
-
-
 };
 
 /**
@@ -135,11 +118,8 @@ class DummyDataLayer : public Layer<Dtype> {
  public:
   explicit DummyDataLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
- //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   // Data layers should be shared by multiple solvers in parallel
   virtual inline bool ShareInParallel() const { return true; }
   // Data layers have no bottoms, so reshaping is trivial.
@@ -173,11 +153,8 @@ class HDF5DataLayer : public Layer<Dtype> {
   explicit HDF5DataLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
   virtual ~HDF5DataLayer();
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   // Data layers should be shared by multiple solvers in parallel
   virtual inline bool ShareInParallel() const { return true; }
   // Data layers have no bottoms, so reshaping is trivial.
@@ -219,11 +196,8 @@ class HDF5OutputLayer : public Layer<Dtype> {
   explicit HDF5OutputLayer(const LayerParameter& param)
       : Layer<Dtype>(param), file_opened_(false) {}
   virtual ~HDF5OutputLayer();
-  //按照bosen下定义的LayerSetUp输入参数形式重新定义LayerSetUp()函数的输入
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false, 
-      int* num_tables = NULL,
-      map<string, vector<int> >* layer_name_to_blob_global_idx = NULL);
+      const vector<Blob<Dtype>*>& top);
   // Data layers should be shared by multiple solvers in parallel
   virtual inline bool ShareInParallel() const { return true; }
   // Data layers have no bottoms, so reshaping is trivial.
@@ -266,9 +240,8 @@ class ImageDataLayer : public BasePrefetchingDataLayer<Dtype> {
   explicit ImageDataLayer(const LayerParameter& param)
       : BasePrefetchingDataLayer<Dtype>(param) {}
   virtual ~ImageDataLayer();
- //bosen对DataLayerSetUp函数的重新定义，增加了变量init_ps
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "ImageData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
@@ -293,17 +266,18 @@ class MemoryDataLayer : public BaseDataLayer<Dtype> {
  public:
   explicit MemoryDataLayer(const LayerParameter& param)
       : BaseDataLayer<Dtype>(param), has_new_data_(false) {}
- //bosen对DataLayerSetUp函数的重新定义，增加了变量init_ps
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "MemoryData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int ExactNumTopBlobs() const { return 2; }
 
   virtual void AddDatumVector(const vector<Datum>& datum_vector);
+#ifdef USE_OPENCV
   virtual void AddMatVector(const vector<cv::Mat>& mat_vector,
       const vector<int>& labels);
+#endif  // USE_OPENCV
 
   // Reset should accept const pointers, but can't, because the memory
   //  will be given to Blob, which is mutable
@@ -341,9 +315,8 @@ class WindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
   explicit WindowDataLayer(const LayerParameter& param)
       : BasePrefetchingDataLayer<Dtype>(param) {}
   virtual ~WindowDataLayer();
- //bosen对DataLayerSetUp函数的重新定义，增加了变量init_ps
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps = false);
+      const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "WindowData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }

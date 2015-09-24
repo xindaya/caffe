@@ -1,3 +1,4 @@
+#ifdef USE_OPENCV
 #include <opencv2/core/core.hpp>
 
 #include <fstream>  // NOLINT(readability/streams)
@@ -22,7 +23,7 @@ ImageDataLayer<Dtype>::~ImageDataLayer<Dtype>() {
 
 template <typename Dtype>
 void ImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top, const bool init_ps) {
+      const vector<Blob<Dtype>*>& top) {
   const int new_height = this->layer_param_.image_data_param().new_height();
   const int new_width  = this->layer_param_.image_data_param().new_width();
   const bool is_color  = this->layer_param_.image_data_param().is_color();
@@ -164,3 +165,4 @@ INSTANTIATE_CLASS(ImageDataLayer);
 REGISTER_LAYER_CLASS(ImageData);
 
 }  // namespace caffe
+#endif  // USE_OPENCV
