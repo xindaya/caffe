@@ -9,10 +9,14 @@ namespace bp = boost::python;
 #include <map>
 #include <string>
 #include <vector>
-
+#include <thread>
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
 #include "caffe/util/signal_handler.h"
+#include "caffe/caffe_engine.hpp"
+#include "caffe/svb_worker.hpp"
+#include <petuum_ps_common/include/petuum_ps.hpp>
+#include <petuum_ps_common/include/system_gflags_declare.hpp>
 
 using caffe::Blob;
 using caffe::Caffe;
@@ -24,7 +28,16 @@ using caffe::string;
 using caffe::Timer;
 using caffe::vector;
 using std::ostringstream;
-
+// -----------------------------modification part end------------------------------- 
+// Petuum Parameters
+DEFINE_int32(num_rows_per_table, 1, 
+    "Number of rows per parameter table.");
+DEFINE_bool(svb, true, 
+    "True to use SVB for inner_product layers");
+DEFINE_int32(svb_timeout_ms, 10, 
+    "Milliseconds the svb receiver waits for");
+// -----------------------------modification part end------------------------------- 
+// Caffe Parameters
 DEFINE_string(gpu, "",
     "Optional; run in GPU mode on given device IDs separated by ','."
     "Use '-gpu all' to run on all available GPUs. The effective training "
@@ -191,7 +204,19 @@ int train() {
   caffe::SignalHandler signal_handler(
         GetRequestedAction(FLAGS_sigint_effect),
         GetRequestedAction(FLAGS_sighup_effect));
-
+// -----------------------------modification part ------------------------------- 
+// Add function InitPS here, caffe in bosen achieves in caffe_engine, need some change
+  // Initialize PS
+  LOG(INFO) << "Initializing PS environment";
+  shared_ptr<caffe::CaffeEngine<float> >
+      caffe_engine(new caffe::CaffeEngine<float>(solver_param));
+  LOG(INFO) << "Tables get ready";
+  petuum::PSTableGroup::CreateTableDone();
+  LOG(INFO) << "PS initialization done.";
+  if (FLAGS_num_clients > 1 && FLAGS_svb && util::Context::num_ip_layers() > 0) {
+    util::Context::set_use_svb(true);
+  } 
+// -----------------------------modification part end------------------------------- 
   shared_ptr<caffe::Solver<float> >
     solver(caffe::GetSolver<float>(solver_param));
 
@@ -212,6 +237,10 @@ int train() {
     solver->Solve();
   }
   LOG(INFO) << "Optimization Done.";
+// -----------------------------modification part ------------------------------- 
+  petuum::PSTableGroup::ShutDown();
+  LOG(INFO) << "NN finished and shut down!";
+// -----------------------------modification part end------------------------------- 
   return 0;
 }
 RegisterBrewFunction(train);
