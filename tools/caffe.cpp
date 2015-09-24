@@ -9,10 +9,14 @@ namespace bp = boost::python;
 #include <map>
 #include <string>
 #include <vector>
-
+#include <thread>
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
 #include "caffe/util/signal_handler.h"
+//#include "caffe/caffe_engine.hpp"
+#include "caffe/svb_worker.hpp"
+#include <petuum_ps_common/include/petuum_ps.hpp>
+#include <petuum_ps_common/include/system_gflags_declare.hpp>
 
 using caffe::Blob;
 using caffe::Caffe;
