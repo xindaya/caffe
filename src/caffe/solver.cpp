@@ -254,7 +254,7 @@ void Solver<Dtype>::InitTestNets() {
     if (Caffe::root_solver()) {
       //test_nets_[i].reset(new Net<Dtype>(net_params[i]));
 	  //test_nets_[i].reset(new Net<Dtype>(net_params[i], thread_id_, i));
-	  test_nets_[i].reset(new Net<Dtype>(net_params[i], this, thread_id_, i));
+	  test_nets_[i].reset(new Net<Dtype>(net_params[i], this->test_nets_[i].get(), thread_id_, i));
     } else {
       test_nets_[i].reset(new Net<Dtype>(net_params[i], root_solver_->test_nets_[i].get()));
     }
@@ -1211,6 +1211,9 @@ void SGDSolver<Dtype>::RestoreSolverStateFromHDF5(const string& state_file) {
   H5Fclose(file_hid);
 }
 
+// -----------------------------modification part ------------------------------- 
+// Annotation here, these types of solvers except SGDSolver dont take into consideration
+/*
 template <typename Dtype>
 void NesterovSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
   CHECK(Caffe::root_solver());
@@ -1674,13 +1677,15 @@ void AdamSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
     LOG(FATAL) << "Unknown caffe mode: " << Caffe::mode();
   }
 }
-
+*/
 INSTANTIATE_CLASS(Solver);
 INSTANTIATE_CLASS(SGDSolver);
+// -----------------------------modification part ------------------------------- 
+/*
 INSTANTIATE_CLASS(NesterovSolver);
 INSTANTIATE_CLASS(AdaGradSolver);
 INSTANTIATE_CLASS(RMSPropSolver);
 INSTANTIATE_CLASS(AdaDeltaSolver);
 INSTANTIATE_CLASS(AdamSolver);
-
+*/
 }  // namespace caffe

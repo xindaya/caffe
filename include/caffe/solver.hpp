@@ -283,7 +283,9 @@ class SGDSolver : public Solver<Dtype> {
   DISABLE_COPY_AND_ASSIGN(SGDSolver);
 };
 // -----------------------------modification part end------------------------------- 
-
+// -----------------------------modification part ------------------------------- 
+// Annotation here, currently these types of solver (except SGDSolver) dont take into consideration
+/*
 template <typename Dtype>
 class NesterovSolver : public SGDSolver<Dtype> {
  public:
@@ -379,6 +381,7 @@ class AdaDeltaSolver : public SGDSolver<Dtype> {
 
   DISABLE_COPY_AND_ASSIGN(AdaDeltaSolver);
 };
+*/
 
 /**
  * @brief AdamSolver, an algorithm for first-order gradient-based optimization
@@ -389,6 +392,7 @@ class AdaDeltaSolver : public SGDSolver<Dtype> {
  *     arXiv preprint arXiv:1412.6980v8 (2014).
  */
 
+/*
 template <typename Dtype>
 class AdamSolver : public SGDSolver<Dtype> {
  public:
@@ -403,7 +407,7 @@ class AdamSolver : public SGDSolver<Dtype> {
 
   DISABLE_COPY_AND_ASSIGN(AdamSolver);
 };
-
+*/
 
 // -----------------------------modification part ------------------------------- 
 // Modify GetSolver construction function, input variable "layer_blobs_global_idx_ptr & thread_id"
@@ -418,6 +422,7 @@ Solver<Dtype>* GetSolver(const SolverParameter& param,
       //return new SGDSolver<Dtype>(param);
       return new SGDSolver<Dtype>(param, layer_blobs_global_idx_ptr, 
           thread_id);
+/** Currently not deal with these types of solver
   case SolverParameter_SolverType_NESTEROV:
       //return new NesterovSolver<Dtype>(param);
       return new NesterovSolver<Dtype>(param, layer_blobs_global_idx_ptr,
@@ -432,6 +437,7 @@ Solver<Dtype>* GetSolver(const SolverParameter& param,
       return new AdaDeltaSolver<Dtype>(param);
   case SolverParameter_SolverType_ADAM:
       return new AdamSolver<Dtype>(param);
+*/
   default:
       LOG(FATAL) << "Unknown SolverType: " << type;
   }
